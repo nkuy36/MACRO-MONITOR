@@ -1,0 +1,171 @@
+//@version=6
+indicator("Druckenmiller Alpha-Physics [Dual-Core]", overlay=false)
+
+// ==========================================
+// 1. INPUTS
+// ==========================================
+// Hardcoded Weekly Macro timeframe for stability
+tf_macro       = input.timeframe("W", "Macro Timeframe (Weekly)")
+vel_len        = input.int(12, "Velocity Length", group="Physics")
+acc_len_base   = input.int(3, "Base Acceleration Length", group="Physics")
+vol_threshold  = input.float(2.0, "Vol Shield (VIX)", group="Risk")
+show_top_n     = input.int(20, "Show Top N Rows", group="Appearance")
+
+// ==========================================
+// 2. PROFESSIONAL PALETTE (Easy on Eyes)
+// ==========================================
+// Muted, high-contrast colors (Material Design style)
+c_text_light   = #E0E0E0             // Soft White
+c_text_dark    = #121212             // Soft Black
+c_header       = #263238             // Blue Grey 900
+c_row_odd      = #37474F             // Blue Grey 800
+c_row_even     = #263238             // Blue Grey 900
+c_bull_rip     = #2E7D32             // Matte Dark Green (Ripping)
+c_bull_turn    = #66BB6A             // Matte Light Green (Early Turn)
+c_bear_top     = #FF7043             // Matte Orange (Topping)
+c_bear_crash   = #EF5350             // Matte Red (Crashing)
+c_act_buy      = #43A047             // Green 600 (Buy Pullback)
+c_act_stink    = #00ACC1             // Cyan 600 (Stink Bid)
+c_act_sell     = #D84315             // Deep Orange 800 (Sell Rip)
+c_act_wait     = #546E7A             // Blue Grey 600 (Wait)
+c_liq_warn     = #3E2723             // Dark Brown/Red (Liquidity Warning)
+
+// ==========================================
+// 3. THE UNIVERSE
+// ==========================================
+syms = array.from(
+      "XLK", "XLV", "XLF", "XLE", "XLI", "XLY", "XLP", "XLU", "XLB", "XLC", "XLRE", 
+      "SMH", "IGV", "XBI", "IBB", "KRE", "XOP", "XHB", "ITA", "JETS", "GDX", "URA", "TAN", "IBIT", "TLT",
+      "GRID", "QTUM"
+      )
+
+// ==========================================
+// 4. GLOBAL CONTEXT
+// ==========================================
+get_macro(string s, string tf, int len) =>
+    request.security(s, tf, ta.roc(close, len), ignore_invalid_symbol=true)
+
+spy_v_macro = get_macro("SPY", tf_macro, vel_len)
+spy_v_tact  = get_macro("SPY", timeframe.period, vel_len)
+
+get_risk_data(string s1, string s2, string tf) =>
+    float v1 = request.security(s1, tf, close, ignore_invalid_symbol=true)
+    float v2 = request.security(s2, tf, ta.change(close), ignore_invalid_symbol=true)
+    [v1, v2]
+
+[vix, tnx_chg] = get_risk_data("VIX", "TNX", timeframe.period)
+
+int dyn_a_len = vix < 15 ? 2 : 4 
+bool liquidity_stress = tnx_chg > 0 
+
+// ==========================================
+// 5. THE ENGINE
+// ==========================================
+f_engine(int v_l, int a_l, float mkt_v) =>
+    float v = ta.roc(close, v_l)
+    float a = ta.mom(v, a_l)
+    float rs = v - mkt_v
+    [v, a, rs]
+
+// Execution
+macro_stats = array.new<int>()
+tact_stats  = array.new<int>()
+macro_vels  = array.new<float>()
+tact_vels   = array.new<float>()
+sym_objs    = array.new<string>()
+
+for i = 0 to array.size(syms) - 1
+    string s = array.get(syms, i)
+    [mV, mA, mRS] = request.security(s, tf_macro, f_engine(vel_len, dyn_a_len, spy_v_macro), ignore_invalid_symbol=true)
+    [tV, tA, tRS] = request.security(s, timeframe.period, f_engine(vel_len, dyn_a_len, spy_v_tact), ignore_invalid_symbol=true)
+    
+    int m_code = (mV > 0 and mA > 0) ? 4 : (mV <= 0 and mA > 0) ? 3 : (mV > 0 and mA < 0) ? 2 : 1
+    int t_code = (tV > 0 and tA > 0) ? 4 : (tV <= 0 and tA > 0) ? 3 : (tV > 0 and tA < 0) ? 2 : 1
+    
+    array.push(macro_stats, m_code)
+    array.push(tact_stats, t_code)
+    array.push(macro_vels, nz(mV))
+    array.push(tact_vels, nz(tV))
+    array.push(sym_objs, s)
+
+// ==========================================
+// 6. SORTING
+// ==========================================
+sort_scores = array.new<float>()
+for i = 0 to array.size(syms) - 1
+    float score = (array.get(macro_stats, i) * 1000) + array.get(macro_vels, i)
+    array.push(sort_scores, score)
+
+ids = array.sort_indices(sort_scores, order.descending)
+
+// ==========================================
+// 7. DASHBOARD & ALERTS
+// ==========================================
+var table dash = table.new(position.middle_right, 6, array.size(syms) + 2, bgcolor=color.new(c_row_even, 100), border_width=1)
+string alert_msg = ""
+
+if barstate.islast
+    // Header Logic
+    color h_bg = liquidity_stress ? color.new(c_liq_warn, 10) : color.new(c_header, 10)
+    string h_liq_txt = liquidity_stress ? " (LIQ TIGHT)" : " (LIQ OK)"
+    
+    table.cell(dash, 0, 0, "SYM", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    table.cell(dash, 1, 0, "WEEKLY (MACRO)", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    table.cell(dash, 2, 0, "DAILY (TACTICAL)", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    table.cell(dash, 3, 0, "ACTION SIGNAL" + h_liq_txt, bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    table.cell(dash, 4, 0, "VEL (W)", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+
+    for i = 0 to math.min(show_top_n, array.size(syms)) - 1
+        int idx = array.get(ids, i)
+        string sym = array.get(sym_objs, idx)
+        int m_c = array.get(macro_stats, idx)
+        int t_c = array.get(tact_stats, idx)
+        float m_v = array.get(macro_vels, idx)
+
+        // Status Text & Muted Colors
+        string m_txt = m_c==4?"RIPPING": m_c==3?"TURN": m_c==2?"TOP": "CRASH"
+        color m_col  = m_c==4?c_bull_rip: m_c==3?c_bull_turn: m_c==2?c_bear_top: c_bear_crash
+        
+        string t_txt = t_c==4?"RIPPING": t_c==3?"TURN": t_c==2?"TOP": "CRASH"
+        color t_col  = t_c==4?c_bull_rip: t_c==3?c_bull_turn: t_c==2?c_bear_top: c_bear_crash
+
+        // Action Logic
+        string act_txt = "WAIT"
+        color act_col = c_act_wait
+        color txt_c = c_text_light
+        bool notify = false
+        
+        if m_c == 4 and (t_c == 1 or t_c == 2)
+            if liquidity_stress
+                act_txt := "WAIT (LIQ)", act_col := c_bear_top
+            else
+                act_txt := "BUY PULLBACK", act_col := c_act_buy, notify := true
+        
+        else if m_c == 3 and (t_c == 1 or t_c == 2)
+            if liquidity_stress
+                act_txt := "WAIT (LIQ)", act_col := c_bear_top
+            else
+                act_txt := "STINK BID", act_col := c_act_stink, txt_c := c_text_dark, notify := true
+
+        else if (m_c == 2 or m_c == 1) and (t_c == 4 or t_c == 3)
+            act_txt := "SELL RIP", act_col := c_act_sell, notify := true
+            
+        else if m_c == 4 and t_c == 4
+            act_txt := "HOLD", act_col := c_bull_rip
+
+        if notify and i < 5 
+            alert_msg := alert_msg + sym + ": " + act_txt + " | "
+
+        color row_bg = i % 2 == 0 ? color.new(c_row_even, 15) : color.new(c_row_odd, 15)
+        
+        if liquidity_stress and act_txt == "WAIT (LIQ)"
+            row_bg := color.new(c_liq_warn, 40)
+
+        table.cell(dash, 0, i+1, sym, bgcolor=row_bg, text_color=color.yellow, text_size=size.small, text_halign=text.align_left)
+        table.cell(dash, 1, i+1, m_txt, bgcolor=m_col, text_color=c_text_dark, text_size=size.small)
+        table.cell(dash, 2, i+1, t_txt, bgcolor=t_col, text_color=c_text_dark, text_size=size.small)
+        table.cell(dash, 3, i+1, act_txt, bgcolor=act_col, text_color=txt_c, text_size=size.small)
+        table.cell(dash, 4, i+1, str.tostring(m_v, "#.1")+"%", bgcolor=row_bg, text_color=c_text_light, text_size=size.small)
+
+    if str.length(alert_msg) > 0
+        alert("Druckenmiller Radar: " + alert_msg, alert.freq_once_per_bar_close)
