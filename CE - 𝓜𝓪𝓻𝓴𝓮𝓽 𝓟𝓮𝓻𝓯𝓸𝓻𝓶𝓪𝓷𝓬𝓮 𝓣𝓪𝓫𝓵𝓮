@@ -1,0 +1,459 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Celestial-Eye
+
+//@version=5
+indicator("🌌 CE - 𝓜𝓪𝓻𝓴𝓮𝓽 𝓟𝓮𝓻𝓯𝓸𝓻𝓶𝓪𝓷𝓬𝓮 𝓣𝓪𝓫𝓵𝓮  🌌")
+
+// Individual ticker symbols
+SPHD = request.security("SPHD","D", close, barmerge.gaps_off)
+SPLV = request.security("SPLV","D", close, barmerge.gaps_off)
+QUAL = request.security("QUAL","D", close, barmerge.gaps_off)
+DEF  = request.security("DEF", "D", close, barmerge.gaps_off)
+IWF  = request.security("IWF", "D", close, barmerge.gaps_off)
+SPHB = request.security("SPHB","D", close, barmerge.gaps_off)
+IYT  = request.security("IYT", "D", close, barmerge.gaps_off)
+IWN  = request.security("IWN", "D", close, barmerge.gaps_off)
+IWD  = request.security("IWD", "D", close, barmerge.gaps_off)
+IWM  = request.security("IWM", "D", close, barmerge.gaps_off)
+IWR  = request.security("IWR", "D", close, barmerge.gaps_off)
+MGK  = request.security("MGK", "D", close, barmerge.gaps_off)
+OEF  = request.security("OEF", "D", close, barmerge.gaps_off)
+MTUM = request.security("MTUM","D", close, barmerge.gaps_off)
+IWB  = request.security("IWB", "D", close, barmerge.gaps_off)
+
+// // Plotting the close prices - for convenience 
+// plot(SPHD, color=color.blue, title="SPHD")
+// plot(SPLV, color=color.red, title="SPLV")
+// plot(QUAL, color=color.green, title="QUAL")
+// plot(DEF, color=color.orange, title="DEF")
+// plot(IWF, color=color.purple, title="IWF")
+// plot(SPHB, color=color.yellow, title="SPHB")
+// plot(IYT, color=color.teal, title="IYT")
+// plot(IWN, color=color.maroon, title="IWN")
+// plot(IWD, color=color.fuchsia, title="IWD")
+// plot(IWM, color=color.gray, title="IWM")
+// plot(IWR, color=color.olive, title="IWR")
+// plot(MGK, color=color.aqua, title="MGK")
+// plot(OEF, color=color.navy, title="OEF")
+// plot(MTUM, color=color.lime, title="MTUM")
+// plot(IWB, color=color.silver, title="IWB")
+
+showCorrTab  = input.bool(true,  "Show Correlation Table",  tooltip = "Plots the Correlation table",                        group = "🌌 Table Settings Correlation 🌌")
+l            = input.int (14,    "Correlation Length",      tooltip = "Defines the time horizon for the Correlation Table", group = "🌌 Table Settings Correlation 🌌")
+showPerfTab  = input.bool(true,  "Show Performance Table",  tooltip = "Plots the Performance table",                        group = "🌌 Table Settings Performance 🌌")
+rocPeriod    = input.int (14,    "ROC Period", minval=1,    tooltip = "Defines the time horizon for the Performance Table", group = "🌌 Table Settings Performance 🌌")
+
+showCorr    = input.bool(false, "Show Correlations?",                                                                                                       group = "Visuals")
+showTrend   = input.bool(false, "Show Trends?", tooltip = "Only shows Trend Values in Status Line... In case you want to export it to Sheets or something", group = "Visuals")
+showImplied = input.bool(false, "Show Implied Correlation?", tooltip = "Shows Implied Correlation on Chart, disable all other Visuals for best Experience", group = "Visuals")
+// Calculate correlation
+correlation_SPHD = ta.correlation(close, SPHD,l)
+correlation_SPLV = ta.correlation(close, SPLV,l)
+correlation_QUAL = ta.correlation(close, QUAL,l)
+correlation_DEF  = ta.correlation(close, DEF,l)
+correlation_IWF  = ta.correlation(close, IWF,l)
+correlation_SPHB = ta.correlation(close, SPHB,l)
+correlation_IYT  = ta.correlation(close, IYT,l)
+correlation_IWN  = ta.correlation(close, IWN,l)
+correlation_IWD  = ta.correlation(close, IWD,l)
+correlation_IWM  = ta.correlation(close, IWM,l)
+correlation_IWR  = ta.correlation(close, IWR,l)
+correlation_MGK  = ta.correlation(close, MGK,l)
+correlation_OEF  = ta.correlation(close, OEF,l)
+correlation_MTUM = ta.correlation(close, MTUM,l)
+correlation_IWB  = ta.correlation(close, IWB,l)
+
+plot(showCorr and barstate.isconfirmed ? correlation_SPHD   :na, color=color.teal,    title="CORR SPHD")
+plot(showCorr and barstate.isconfirmed ? correlation_SPLV   :na, color=color.aqua,    title="CORR SPLV")
+plot(showCorr and barstate.isconfirmed ? correlation_QUAL   :na, color=color.gray,    title="CORR QUAL")
+plot(showCorr and barstate.isconfirmed ? correlation_DEF    :na, color=color.maroon,  title="CORR DEF")
+plot(showCorr and barstate.isconfirmed ? correlation_IWF    :na, color=color.orange,  title="CORR IWF")
+plot(showCorr and barstate.isconfirmed ? correlation_SPHB   :na, color=color.rgb(239, 136, 227), title="CORR SPHB")
+plot(showCorr and barstate.isconfirmed ? correlation_IYT    :na, color=color.yellow,  title="CORR IYT")
+plot(showCorr and barstate.isconfirmed ? correlation_IWN    :na, color=color.yellow,  title="CORR IWN")
+plot(showCorr and barstate.isconfirmed ? correlation_IWD    :na, color=color.fuchsia, title="CORR IWD")
+plot(showCorr and barstate.isconfirmed ? correlation_IWM    :na, color=color.purple,  title="CORR IWM")
+plot(showCorr and barstate.isconfirmed ? correlation_IWR    :na, color=color.blue,    title="CORR IWR")
+plot(showCorr and barstate.isconfirmed ? correlation_MGK    :na, color=color.red,     title="CORR MGK")
+plot(showCorr and barstate.isconfirmed ? correlation_OEF    :na, color=color.olive,   title="CORR OEF")
+plot(showCorr and barstate.isconfirmed ? correlation_MTUM   :na, color=color.lime,    title="CORR MTUM")
+plot(showCorr and barstate.isconfirmed ? correlation_IWB    :na, color=color.silver,  title="CORR IWB")
+
+//Calculate Trend Value for each Asset with Normalized KAMA Oscillator by IKKE OMAR
+// -> https://www.tradingview.com/script/OwtiIzT3-Normalized-KAMA-Oscillator-Ikke-Omar/
+kama(asset) =>
+    // Define input parameters
+    fast_period = input.int(title='Fast Period',             defval=7,  minval=1, group = "Norm KAMA", tooltip = "Normalized KAMA Oscillator by IkkeOmar")
+    slow_period = input.int(title='Slow Period',             defval=19, minval=1, group = "Norm KAMA")
+    er_period   = input.int(title='Efficiency Ratio Period', defval=8,  minval=1, group = "Norm KAMA")
+    norm_period = input.int(title='Normalization lookback',  defval=10, minval=1, group = "Norm KAMA", tooltip = "Defines the time horizon for the Trend calculation of the ETF's - For longer term Trends over weeks or months a length of 50 is usually pretty accurate")
+
+
+    // Calculate the efficiency ratio
+    change     = math.abs(asset - asset[er_period])
+    volatility = math.sum(math.abs(asset - asset[1]), er_period)
+    er         = change / volatility
+
+    // Calculate the smoothing constant
+    sc = er * (2 / (fast_period + 1) - 2 / (slow_period + 1)) + 2 / (slow_period + 1)
+
+    // Calculate the KAMA
+    kama = ta.ema(asset, fast_period) + sc * (asset - ta.ema(asset, fast_period))
+
+    // Normalize the Oscillator
+    lowest  = ta.lowest (kama, norm_period)
+    highest = ta.highest(kama, norm_period)
+    normalized = (kama - lowest) / (highest - lowest) - 0.5
+    normalized
+
+kamaSPHD = kama(SPHD) > 0? 1 : -1
+kamaSPLV = kama(SPLV) > 0? 1 : -1
+kamaQUAL = kama(QUAL) > 0? 1 : -1
+kamaDEF  = kama(DEF)  > 0? 1 : -1
+kamaIWF  = kama(IWF)  > 0? 1 : -1
+kamaSPHB = kama(SPHB) > 0? 1 : -1
+kamaIYT  = kama(IYT)  > 0? 1 : -1
+kamaIWN  = kama(IWN)  > 0? 1 : -1
+kamaIWD  = kama(IWD)  > 0? 1 : -1
+kamaIWM  = kama(IWM)  > 0? 1 : -1
+kamaIWR  = kama(IWR)  > 0? 1 : -1
+kamaMGK  = kama(MGK)  > 0? 1 : -1
+kamaOEF  = kama(OEF)  > 0? 1 : -1
+kamaMTUM = kama(MTUM) > 0? 1 : -1
+kamaIWB  = kama(IWB)  > 0? 1 : -1
+
+plot(showTrend?kamaSPHD :na, color=color.teal,               title="Trend SPHD", display = display.status_line)
+plot(showTrend?kamaSPLV :na, color=color.aqua,               title="Trend SPLV", display = display.status_line)
+plot(showTrend?kamaQUAL :na, color=color.gray,               title="Trend QUAL", display = display.status_line)
+plot(showTrend?kamaDEF  :na, color=color.maroon,             title="Trend DEF",  display = display.status_line)
+plot(showTrend?kamaIWF  :na, color=color.orange,             title="Trend IWF",  display = display.status_line)
+plot(showTrend?kamaSPHB :na, color=color.rgb(239, 136, 227), title="Trend SPHB", display = display.status_line)
+plot(showTrend?kamaIYT  :na, color=color.yellow,             title="Trend IYT",  display = display.status_line)
+plot(showTrend?kamaIWN  :na, color=color.yellow,             title="Trend IWN",  display = display.status_line)
+plot(showTrend?kamaIWD  :na, color=color.fuchsia,            title="Trend IWD",  display = display.status_line)
+plot(showTrend?kamaIWM  :na, color=color.purple,             title="Trend IWM",  display = display.status_line)
+plot(showTrend?kamaIWR  :na, color=color.blue,               title="Trend IWR",  display = display.status_line)
+plot(showTrend?kamaMGK  :na, color=color.red,                title="Trend MGK",  display = display.status_line)
+plot(showTrend?kamaOEF  :na, color=color.olive,              title="Trend OEF",  display = display.status_line)
+plot(showTrend?kamaMTUM :na, color=color.lime,               title="Trend MTUM", display = display.status_line)
+plot(showTrend?kamaIWB  :na, color=color.silver,             title="Trend IWB",  display = display.status_line)
+
+//Calculate Implied Correlation
+ImplCorrAvg = math.avg(
+     math.round(correlation_SPHD* kamaSPHD, 2),
+     math.round(correlation_SPLV* kamaSPLV, 2),
+     math.round(correlation_QUAL* kamaQUAL, 2),
+     math.round(correlation_DEF*  kamaDEF,  2),
+     math.round(correlation_IWF*  kamaIWF,  2),
+     math.round(correlation_SPHB* kamaSPHB, 2),
+     math.round(correlation_IYT*  kamaIYT,  2),
+     math.round(correlation_IWN*  kamaIWN,  2),
+     math.round(correlation_IWD*  kamaIWD,  2),
+     math.round(correlation_IWM*  kamaIWM,  2),
+     math.round(correlation_IWR*  kamaIWR,  2),
+     math.round(correlation_MGK*  kamaMGK,  2),
+     math.round(correlation_OEF*  kamaOEF,  2),
+     math.round(correlation_MTUM* kamaMTUM, 2),
+     math.round(correlation_IWB*  kamaIWB,  2))
+
+
+// Display correlation values
+var string G3 = "🌌 Table Settings Correlation 🌌"
+string table0_y_pos = input.string(defval = "top",    title = "Table Position", options = ["top", "middle", "bottom"],                                          group = G3, inline = "1")
+string table0_x_pos = input.string(defval = "center", title = "",               options = ["left", "center", "right"],                                          group = G3, inline = "1")
+string i_text_size  = input.string(defval=size.tiny, title='Text Size:',       options=[size.tiny, size.small, size.normal, size.large, size.huge, size.auto], group = G3              )
+var table table0 = table.new(table0_y_pos + "_" + table0_x_pos, columns = 16, rows = 6, frame_color = color.white,
+ frame_width = 1, border_color = color.white, border_width = 1)
+
+if showCorrTab
+    table.merge_cells(table0, 0, 0, 15, 0)
+    table.merge_cells(table0, 0, 4, 15, 4)
+
+if showCorrTab and barstate.islast
+    table.cell(table0, 0, 0, "🌌 CE - MARKET CORRELATION "+str.tostring(l)+"D 🌌", text_size = i_text_size, text_color = color.purple)
+    table.cell(table0, 0, 1, "Symbol:",                                             text_size = i_text_size, text_color = color.white, bgcolor = color.black)
+    table.cell(table0, 0, 2, "Correlation:",                                        text_size = i_text_size, text_color = color.white, bgcolor = color.black)
+    table.cell(table0, 0, 3, "Trend:",                                              text_size = i_text_size, text_color = color.white, bgcolor = color.black)
+    table.cell(table0, 0, 4, "Implied Trend to Chart "+str.tostring(l)+"D :",       text_size = i_text_size, text_color = color.white, bgcolor = color.black)
+    table.cell(table0, 0, 5, "Avg: " + str.tostring(math.round(ImplCorrAvg, 2)), text_size = i_text_size, text_color = math.round(ImplCorrAvg, 2) > 0 ?color.green:color.red)
+
+    table.cell(table0, 1, 1, "SPHD", text_size = i_text_size, text_color = color.teal)
+    table.cell(table0, 1, 2, str.tostring(math.round(correlation_SPHD, 2)), text_size = i_text_size, text_color = correlation_SPHD > 0 ? color.green : color.red)
+    table.cell(table0, 1, 3, str.tostring(kamaSPHD), text_size = i_text_size, text_color = kamaSPHD > 0 ? color.green : color.red)
+    table.cell(table0, 1, 5, str.tostring(math.round(correlation_SPHD*kamaSPHD, 2)), text_size = i_text_size, text_color = math.round(correlation_SPHD*kamaSPHD, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 2, 1, "SPLV", text_size = i_text_size, text_color = color.aqua)
+    table.cell(table0, 2, 2, str.tostring(math.round(correlation_SPLV, 2)), text_size = i_text_size, text_color = correlation_SPLV > 0 ? color.green : color.red)
+    table.cell(table0, 2, 3, str.tostring(kamaSPLV), text_size = i_text_size, text_color = kamaSPLV > 0 ? color.green : color.red)
+    table.cell(table0, 2, 5, str.tostring(math.round(correlation_SPLV*kamaSPLV, 2)), text_size = i_text_size, text_color = math.round(correlation_SPLV*kamaSPLV, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 3, 1, "QUAL", text_size = i_text_size, text_color = color.gray)
+    table.cell(table0, 3, 2, str.tostring(math.round(correlation_QUAL, 2)), text_size = i_text_size, text_color = correlation_QUAL > 0 ? color.green : color.red)
+    table.cell(table0, 3, 3, str.tostring(kamaQUAL), text_size = i_text_size, text_color = kamaQUAL > 0 ? color.green : color.red)
+    table.cell(table0, 3, 5, str.tostring(math.round(correlation_QUAL*kamaQUAL, 2)), text_size = i_text_size, text_color = math.round(correlation_SPLV*kamaSPLV, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 4, 1, "DEF", text_size = i_text_size, text_color = color.maroon)
+    table.cell(table0, 4, 2, str.tostring(math.round(correlation_DEF, 2)), text_size = i_text_size, text_color = correlation_DEF > 0 ? color.green : color.red)
+    table.cell(table0, 4, 3, str.tostring(kamaDEF), text_size = i_text_size, text_color = kamaDEF > 0 ? color.green : color.red)
+    table.cell(table0, 4, 5, str.tostring(math.round(correlation_DEF*kamaDEF, 2)), text_size = i_text_size, text_color = math.round(correlation_DEF*kamaDEF, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 5, 1, "IWF", text_size = i_text_size, text_color = color.orange)
+    table.cell(table0, 5, 2, str.tostring(math.round(correlation_IWF, 2)), text_size = i_text_size, text_color = correlation_IWF > 0 ? color.green : color.red)
+    table.cell(table0, 5, 3, str.tostring(kamaIWF), text_size = i_text_size, text_color = kamaIWF > 0 ? color.green : color.red)
+    table.cell(table0, 5, 5, str.tostring(math.round(correlation_IWF*kamaIWF, 2)), text_size = i_text_size, text_color = math.round(correlation_IWF*kamaIWF, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 6, 1, "SPHB", text_size = i_text_size, text_color = color.rgb(239, 136, 227))
+    table.cell(table0, 6, 2, str.tostring(math.round(correlation_SPHB, 2)), text_size = i_text_size, text_color = correlation_SPHB > 0 ? color.green : color.red)
+    table.cell(table0, 6, 3, str.tostring(kamaSPHB), text_size = i_text_size, text_color = kamaSPHB> 0 ? color.green : color.red)
+    table.cell(table0, 6, 5, str.tostring(math.round(correlation_SPHB*kamaSPHB, 2)), text_size = i_text_size, text_color = math.round(correlation_SPHB*kamaSPHB, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 7, 1, "IYT", text_size = i_text_size, text_color = color.yellow)
+    table.cell(table0, 7, 2, str.tostring(math.round(correlation_IYT, 2)), text_size = i_text_size, text_color = correlation_IYT > 0 ? color.green : color.red)
+    table.cell(table0, 7, 3, str.tostring(kamaIYT), text_size = i_text_size, text_color = kamaIYT > 0 ? color.green : color.red)
+    table.cell(table0, 7, 5, str.tostring(math.round(correlation_IYT*kamaIYT, 2)), text_size = i_text_size, text_color = math.round(correlation_IYT*kamaIYT, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 8, 1, "IWN", text_size = i_text_size, text_color = color.yellow)
+    table.cell(table0, 8, 2, str.tostring(math.round(correlation_IWN, 2)), text_size = i_text_size, text_color = correlation_IWN > 0 ? color.green : color.red)
+    table.cell(table0, 8, 3, str.tostring(kamaIWN), text_size = i_text_size, text_color = kamaIWN > 0 ? color.green : color.red)
+    table.cell(table0, 8, 5, str.tostring(math.round(correlation_IWN*kamaIWN, 2)), text_size = i_text_size, text_color = math.round(correlation_IWN*kamaIWN, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 9, 1, "IWD", text_size = i_text_size, text_color = color.fuchsia)
+    table.cell(table0, 9, 2, str.tostring(math.round(correlation_IWD, 2)), text_size = i_text_size, text_color = correlation_IWD > 0 ? color.green : color.red)
+    table.cell(table0, 9, 3, str.tostring(kamaIWD), text_size = i_text_size, text_color = kamaIWD > 0 ? color.green : color.red)
+    table.cell(table0, 9, 5, str.tostring(math.round(correlation_IWD*kamaIWD, 2)), text_size = i_text_size, text_color = math.round(correlation_IWD*kamaIWD, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 10, 1, "IWM", text_size = i_text_size, text_color = color.purple)
+    table.cell(table0, 10, 2, str.tostring(math.round(correlation_IWM, 2)), text_size = i_text_size, text_color = correlation_IWM > 0 ? color.green : color.red)
+    table.cell(table0, 10, 3, str.tostring(kamaIWM), text_size = i_text_size, text_color = kamaIWM > 0 ? color.green : color.red)
+    table.cell(table0, 10, 5, str.tostring(math.round(correlation_IWM*kamaIWM, 2)), text_size = i_text_size, text_color = math.round(correlation_IWM*kamaIWM, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 11, 1, "IWR", text_size = i_text_size, text_color = color.blue)
+    table.cell(table0, 11, 2, str.tostring(math.round(correlation_IWR, 2)), text_size = i_text_size, text_color = correlation_IWR > 0 ? color.green : color.red)
+    table.cell(table0, 11, 3, str.tostring(kamaIWR), text_size = i_text_size, text_color = kamaIWR > 0 ? color.green : color.red)
+    table.cell(table0, 11, 5, str.tostring(math.round(correlation_IWR*kamaIWR, 2)), text_size = i_text_size, text_color = math.round(correlation_IWR*kamaIWR, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 12, 1, "MGK", text_size = i_text_size, text_color = color.red)
+    table.cell(table0, 12, 2, str.tostring(math.round(correlation_MGK, 2)), text_size = i_text_size, text_color = correlation_MGK > 0 ? color.green : color.red)
+    table.cell(table0, 12, 3, str.tostring(kamaMGK), text_size = i_text_size, text_color = kamaMGK > 0 ? color.green : color.red)
+    table.cell(table0, 12, 5, str.tostring(math.round(correlation_MGK*kamaMGK, 2)), text_size = i_text_size, text_color = math.round(correlation_MGK*kamaMGK, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 13, 1, "OEF", text_size = i_text_size, text_color = color.olive)
+    table.cell(table0, 13, 2, str.tostring(math.round(correlation_OEF, 2)), text_size = i_text_size, text_color = correlation_OEF > 0 ? color.green : color.red)
+    table.cell(table0, 13, 3, str.tostring(kamaOEF), text_size = i_text_size, text_color = kamaOEF > 0 ? color.green : color.red)
+    table.cell(table0, 13, 5, str.tostring(math.round(correlation_OEF*kamaOEF, 2)), text_size = i_text_size, text_color = math.round(correlation_OEF*kamaOEF, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 14, 1, "MTUM", text_size = i_text_size, text_color = color.lime)
+    table.cell(table0, 14, 2, str.tostring(math.round(correlation_MTUM, 2)), text_size = i_text_size, text_color = correlation_MTUM > 0 ? color.green : color.red)
+    table.cell(table0, 14, 3, str.tostring(kamaMTUM), text_size = i_text_size, text_color = kamaMTUM > 0 ? color.green : color.red)
+    table.cell(table0, 14, 5, str.tostring(math.round(correlation_MTUM*kamaMTUM, 2)), text_size = i_text_size, text_color = math.round(correlation_MTUM*kamaMTUM, 2) > 0 ? color.green : color.red)
+
+    table.cell(table0, 15, 1, "IWB", text_size = i_text_size, text_color = color.silver)
+    table.cell(table0, 15, 2, str.tostring(math.round(correlation_IWB, 2)), text_size = i_text_size, text_color = correlation_IWB > 0 ? color.green : color.red)
+    table.cell(table0, 15, 3, str.tostring(kamaIWB), text_size = i_text_size, text_color = kamaIWB > 0 ? color.green : color.red)
+    table.cell(table0, 15, 5, str.tostring(math.round(correlation_IWB*kamaIWB, 2)), text_size = i_text_size, text_color = math.round(correlation_IWB*kamaIWB, 2) > 0 ? color.green : color.red)
+
+
+plot(showImplied?ImplCorrAvg:na,"Implied Correlation Avg", ImplCorrAvg > 0.1  ?color.green : ImplCorrAvg < -0.1  ? color.red : color.gray, style = plot.style_columns)
+hline(showImplied? 0.1  : na, color = color.green, linewidth = 2)
+hline(showImplied? 0    : na)
+hline(showImplied? -0.1 : na, color = color.red  , linewidth = 2)
+barcolor(ImplCorrAvg > 0.1  ?color.green : ImplCorrAvg < -0.1  ? color.red : color.gray)
+
+// Rate of Change (ROC) calculation
+showRoC = input.bool(false, "Show RoC?", group = "Visuals")
+// Calculate average ROC
+avgROC = (ta.roc(SPHD, rocPeriod) +
+          ta.roc(SPLV, rocPeriod) +
+          ta.roc(QUAL, rocPeriod) +
+          ta.roc(DEF, rocPeriod) +
+          ta.roc(IWF, rocPeriod) +
+          ta.roc(SPHB, rocPeriod) +
+          ta.roc(IYT, rocPeriod) +
+          ta.roc(IWN, rocPeriod) +
+          ta.roc(IWD, rocPeriod) +
+          ta.roc(IWM, rocPeriod) +
+          ta.roc(IWR, rocPeriod) +
+          ta.roc(MGK, rocPeriod) +
+          ta.roc(OEF, rocPeriod) +
+          ta.roc(MTUM, rocPeriod) +
+          ta.roc(IWB, rocPeriod)) / 15
+
+// Calculate ROC relative to average ROC
+rocSPHD = ta.roc(SPHD, rocPeriod) - avgROC
+rocSPLV = ta.roc(SPLV, rocPeriod) - avgROC
+rocQUAL = ta.roc(QUAL, rocPeriod) - avgROC
+rocDEF  = ta.roc(DEF,  rocPeriod) - avgROC
+rocIWF  = ta.roc(IWF,  rocPeriod) - avgROC
+rocSPHB = ta.roc(SPHB, rocPeriod) - avgROC
+rocIYT  = ta.roc(IYT,  rocPeriod) - avgROC
+rocIWN  = ta.roc(IWN,  rocPeriod) - avgROC
+rocIWD  = ta.roc(IWD,  rocPeriod) - avgROC
+rocIWM  = ta.roc(IWM,  rocPeriod) - avgROC
+rocIWR  = ta.roc(IWR,  rocPeriod) - avgROC
+rocMGK  = ta.roc(MGK,  rocPeriod) - avgROC
+rocOEF  = ta.roc(OEF,  rocPeriod) - avgROC
+rocMTUM = ta.roc(MTUM, rocPeriod) - avgROC
+rocIWB  = ta.roc(IWB,  rocPeriod) - avgROC
+
+// Plotting the ROC values
+plot(showRoC?rocSPHD :na, color=color.teal,    title="ROC SPHD")
+plot(showRoC?rocSPLV :na, color=color.aqua,    title="ROC SPLV")
+plot(showRoC?rocQUAL :na, color=color.gray,    title="ROC QUAL")
+plot(showRoC?rocDEF  :na, color=color.maroon,  title="ROC DEF")
+plot(showRoC?rocIWF  :na, color=color.orange,  title="ROC IWF")
+plot(showRoC?rocSPHB :na, color=color.rgb(239, 136, 227), title="ROC SPHB")
+plot(showRoC?rocIYT  :na, color=color.yellow,  title="ROC IYT")
+plot(showRoC?rocIWN  :na, color=color.yellow,  title="ROC IWN")
+plot(showRoC?rocIWD  :na, color=color.fuchsia, title="ROC IWD")
+plot(showRoC?rocIWM  :na, color=color.purple,  title="ROC IWM")
+plot(showRoC?rocIWR  :na, color=color.blue,    title="ROC IWR")
+plot(showRoC?rocMGK  :na, color=color.red,     title="ROC MGK")
+plot(showRoC?rocOEF  :na, color=color.olive,   title="ROC OEF")
+plot(showRoC?rocMTUM :na, color=color.lime,    title="ROC MTUM")
+plot(showRoC?rocIWB  :na, color=color.silver,  title="ROC IWB")
+
+Goldilocks  = (rocSPHB>0?+1:0) + (rocIWM>0?+1:0) + (rocMGK>0?+1:0) + (rocIYT>0?+1:0)  +(rocIWN>0?+1:0)  + (rocIWR>0?+1:0)  + (rocSPLV<0?+1:0) + (rocDEF<0?+1:0) + (rocSPHD<0?+1:0) + (rocQUAL<0?+1:0) + (rocOEF<0?+1:0)
+Reflation   = (rocSPHB>0?+1:0) + (rocIWM>0?+1:0) + (rocMGK>0?+1:0) + (rocIYT>0?+1:0)  +(rocIWN>0?+1:0)  + (rocMTUM>0?+1:0) + (rocSPLV<0?+1:0) + (rocDEF<0?+1:0) + (rocSPHD<0?+1:0) + (rocQUAL<0?+1:0) + (rocIWB<0?+1:0)
+Inflation   = (rocSPLV>0?+1:0) + (rocDEF>0?+1:0) + (rocMGK>0?+1:0) + (rocSPHD>0?+1:0) +(rocQUAL>0?+1:0) + (rocSPHB<0?+1:0) + (rocIWM<0?+1:0)  + (rocIYT<0?+1:0) + (rocIWN<0?+1:0)  + (rocIWR<0?+1:0)  + (rocIWD<0?+1:0)
+Deflation   = (rocSPLV>0?+1:0) + (rocDEF>0?+1:0) + (rocMGK>0?+1:0) + (rocSPHD>0?+1:0) +(rocIWF>0?+1:0)  + (rocSPHB<0?+1:0) + (rocIWM<0?+1:0)  + (rocIYT<0?+1:0) + (rocIWN<0?+1:0)  + (rocIWR<0?+1:0)  + (rocIWD<0?+1:0)
+Denumerator =  Goldilocks + Reflation + Inflation + Deflation
+Risk        = (Goldilocks > Inflation or Goldilocks > Deflation or Reflation > Inflation or Reflation > Deflation) ? "RISK ON" : "RISK OFF"
+RiskCol     = (Risk == "RISK ON"? color.green : color.red)
+RiskBg      = (Risk == "RISK ON"? color.new(color.green, 40) : color.new(color.red, 40))
+
+var string G2 = "🌌 Table Settings Performance 🌌"
+string table_y_pos = input.string(defval = "bottom", title = "Table Position", options = ["top", "middle", "bottom"], group = G2, inline = "1")
+string table_x_pos = input.string(defval = "center", title = "",               options = ["left", "center", "right"], group = G2, inline = "1")
+ 
+color positive_color_input = color(color.new(color.green, 0))
+color negative_color_input = color(color.new(color.red, 0))
+
+var table table = table.new(table_y_pos + "_" + table_x_pos, columns = 10, rows = 17, frame_color = color.white,
+ frame_width = 1, border_color = color.white, border_width = 1)
+
+if showPerfTab
+    table.merge_cells(table, 0, 0,  7,  0)
+    table.merge_cells(table, 0, 1,  1,  1)
+    table.merge_cells(table, 2, 1,  3,  1)
+    table.merge_cells(table, 4, 1,  5,  1)
+    table.merge_cells(table, 6, 1,  7,  1)
+    table.merge_cells(table, 0, 2,  7,  2)
+    table.merge_cells(table, 0, 8,  7,  8)
+    table.merge_cells(table, 0, 14, 7, 14)
+    table.merge_cells(table, 0, 16, 7, 16)
+
+    // Definitions
+if showPerfTab and barstate.islast
+    table.cell(table, 0, 0,  text = "🌌 CE - MARKET PERFORMANCE "+str.tostring(rocPeriod)+"D 🌌", text_size = i_text_size, text_color = color.purple)
+    table.cell(table, 0, 2,  text = "Top 5 Equity Style Factors ",                                 text_size = i_text_size, text_color = color.green)
+    table.cell(table, 0, 8,  text = "Bottom 5 Equity Style Factors ",                              text_size = i_text_size, text_color = color.red)
+    table.cell(table, 0, 14, text = "Risk Period: ",                                               text_size = i_text_size, text_color = color.white)
+    table.cell(table, 0, 16, text = Risk,                                                          text_size = i_text_size, text_color = color.white , bgcolor = RiskBg, text_font_family = font.family_monospace)
+  
+ 
+    table.cell(table, 0, 1,"GOLDILOCKS", text_size = i_text_size, text_color = color.green)                                                                              // *10 is just for better visual purpose
+    table.cell(table, 0, 3,"High Beta (SPHB) ", text_size = i_text_size, text_color = color.rgb(239, 136, 227))
+    table.cell(table, 1, 3,str.tostring(math.round(rocSPHB,2)), text_size = i_text_size, text_color = rocSPHB > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 4,"Small Caps (IWM)", text_size = i_text_size, text_color = color.purple)
+    table.cell(table, 1, 4,str.tostring(math.round(rocIWM,2)), text_size = i_text_size, text_color = rocIWM > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 5,"Mega Cap Growth (MGK) ", text_size = i_text_size, text_color = color.red)
+    table.cell(table, 1, 5,str.tostring(math.round(rocMGK,2)), text_size = i_text_size, text_color = rocMGK > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 6,"Cyclicals (IYT, IWN) ", text_size = i_text_size, text_color = color.yellow)
+    table.cell(table, 1, 6,str.tostring(math.round(rocIYT,2)) + ", " + str.tostring(math.round(rocIWN,2)), text_size = i_text_size, text_color = rocIYT > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 7,"Mid Caps (IWR)", text_size = i_text_size, text_color = color.blue)
+    table.cell(table, 1, 7,str.tostring(math.round(rocIWR,2)), text_size = i_text_size, text_color = rocIWR > 0 ? positive_color_input : negative_color_input)
+
+    table.cell(table, 0, 9, text = "Low Beta (SPLV) ", text_size = i_text_size, text_color = color.aqua)
+    table.cell(table, 1, 9,str.tostring(math.round(rocSPLV,2)), text_size = i_text_size, text_color = rocSPLV > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 10, text = "Defensives (DEF) ", text_size = i_text_size, text_color = color.maroon)
+    table.cell(table, 1, 10,str.tostring(math.round(rocDEF,2)), text_size = i_text_size, text_color = rocDEF > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 11, text = "Dividends (SPHD)", text_size = i_text_size, text_color = color.teal)
+    table.cell(table, 1, 11,str.tostring(math.round(rocSPHD,2)), text_size = i_text_size, text_color = rocSPHD > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 12, text = "Quality (QUAL) ", text_size = i_text_size, text_color = color.gray)
+    table.cell(table, 1, 12,str.tostring(math.round(rocQUAL,2)), text_size = i_text_size, text_color = rocQUAL > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 13, text = "Size (OEF) ", text_size = i_text_size, text_color = color.olive)
+    table.cell(table, 1, 13,str.tostring(math.round(rocOEF,2)), text_size = i_text_size, text_color = rocOEF > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 0, 15, text = "Goldilocks Probability: ", text_size = i_text_size, text_color = color.white)
+    table.cell(table, 1, 15,str.tostring(math.round(Goldilocks/Denumerator*100, 2))+"% | "+str.tostring(Goldilocks)+ " / 11", text_size = i_text_size, text_color = RiskCol)
+
+    table.cell(table, 2, 1,"REFLATION", text_size = i_text_size, text_color = color.lime)         
+    table.cell(table, 2, 3,"High Beta (SPHB)", text_size = i_text_size, text_color = color.rgb(239, 136, 227))
+    table.cell(table, 3, 3,str.tostring(math.round(rocSPHB,2)), text_size = i_text_size, text_color = rocSPHB > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 4,"Small Caps (IWM)", text_size = i_text_size, text_color = color.purple)
+    table.cell(table, 3, 4,str.tostring(math.round(rocIWM,2)), text_size = i_text_size, text_color = rocIWM > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 5,"Mega Cap Growth (MGK)", text_size = i_text_size, text_color = color.red)
+    table.cell(table, 3, 5,str.tostring(math.round(rocMGK,2)), text_size = i_text_size, text_color = rocMGK > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 6,"Cyclicals (IYT, IWN)", text_size = i_text_size, text_color = color.yellow)
+    table.cell(table, 3, 6,str.tostring(math.round(rocIYT,2)) + ", " + str.tostring(math.round(rocIWN,2)), text_size = i_text_size, text_color = rocIYT > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 7,"Momentum (MTUM)", text_size = i_text_size, text_color = color.lime)
+    table.cell(table, 3, 7,str.tostring(math.round(rocMTUM,2)), text_size = i_text_size, text_color = rocMTUM > 0 ? positive_color_input : negative_color_input)  
+    
+    table.cell(table, 2, 9, text = "Low Beta (SPLV)", text_size = i_text_size, text_color = color.aqua)
+    table.cell(table, 3, 9,str.tostring(math.round(rocSPLV,2)), text_size = i_text_size, text_color = rocSPLV > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 10, text = "Defensives (DEF)", text_size = i_text_size, text_color = color.maroon)
+    table.cell(table, 3, 10,str.tostring(math.round(rocDEF,2)), text_size = i_text_size, text_color = rocDEF > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 11, text = "Dividends (SPHD)", text_size = i_text_size, text_color = color.teal)
+    table.cell(table, 3, 11,str.tostring(math.round(rocSPHD,2)), text_size = i_text_size, text_color = rocSPHD > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 12, text = "Quality (QUAL)", text_size = i_text_size, text_color = color.gray)
+    table.cell(table, 3, 12,str.tostring(math.round(rocQUAL,2)), text_size = i_text_size, text_color = rocQUAL > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 13, text = "Large Caps (IWB)", text_size = i_text_size, text_color = color.silver)
+    table.cell(table, 3, 13,str.tostring(math.round(rocIWB,2)), text_size = i_text_size, text_color = rocIWB > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 2, 15, text = "Reflation Probability: ", text_size = i_text_size, text_color = color.white)
+    table.cell(table, 3, 15,str.tostring(math.round(Reflation/Denumerator*100, 2))+"% | "+str.tostring(Reflation)+ " / 11", text_size = i_text_size, text_color = RiskCol)
+
+    table.cell(table, 4, 1,"INFLATION", text_size = i_text_size, text_color = color.red)          
+    table.cell(table, 4, 3,"Low Beta (SPLV)", text_size = i_text_size, text_color = color.aqua)
+    table.cell(table, 5, 3,str.tostring(math.round(rocSPLV,2)), text_size = i_text_size, text_color = rocSPLV > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 4, 4,"Defensives (DEF)", text_size = i_text_size, text_color = color.maroon)
+    table.cell(table, 5, 4,str.tostring(math.round(rocDEF,2)), text_size = i_text_size, text_color = rocDEF > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 4, 5,"Mega Cap Growth (MGK)", text_size = i_text_size, text_color = color.red)
+    table.cell(table, 5, 5,str.tostring(math.round(rocMGK,2)), text_size = i_text_size, text_color = rocMGK > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 4, 6,"Dividends (SPHD) ", text_size = i_text_size, text_color = color.teal)
+    table.cell(table, 5, 6,str.tostring(math.round(rocSPHD,2)), text_size = i_text_size, text_color = rocSPHD > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 4, 7,"Quality (QUAL) ", text_size = i_text_size, text_color = color.gray)
+    table.cell(table, 5, 7,str.tostring(math.round(rocQUAL,2)), text_size = i_text_size, text_color = rocQUAL > 0 ? positive_color_input : negative_color_input)  
+
+    table.cell(table, 4, 9, text = "High Beta (SPHB)", text_size = i_text_size, text_color = color.rgb(239, 136, 227))
+    table.cell(table, 5, 9,str.tostring(math.round(rocSPHB,2)), text_size = i_text_size, text_color = rocSPHB > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 4, 10, text = "Small Caps (IWM)", text_size = i_text_size, text_color = color.purple)
+    table.cell(table, 5, 10,str.tostring(math.round(rocIWM,2)), text_size = i_text_size, text_color = rocIWM > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 4, 11, text = "Cyclicals (IYT, IWN)", text_size = i_text_size, text_color = color.yellow)
+    table.cell(table, 5, 11,str.tostring(math.round(rocIYT,2)) + ", " + str.tostring(math.round(rocIWN,2)), text_size = i_text_size, text_color = rocIYT > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 4, 12, text = "Mid Caps (IWR)", text_size = i_text_size, text_color = color.blue)
+    table.cell(table, 5, 12,str.tostring(math.round(rocIWR,2)), text_size = i_text_size, text_color = rocIWR > 0 ? positive_color_input : negative_color_input)  
+    table.cell(table, 4, 13, text = "Value (IWD)", text_size = i_text_size, text_color = color.fuchsia)
+    table.cell(table, 5, 13,str.tostring(math.round(rocIWD,2)), text_size = i_text_size, text_color = rocIWD > 0 ? positive_color_input : negative_color_input)  
+    table.cell(table, 4, 15, text = "Inflation Probability: ", text_size = i_text_size, text_color = color.white)
+    table.cell(table, 5, 15,str.tostring(math.round(Inflation/Denumerator*100, 2))+"% | "+str.tostring(Inflation)+ " / 11", text_size = i_text_size, text_color = RiskCol)
+
+    table.cell(table, 6, 1,"DEFLATION", text_size = i_text_size, text_color = color.blue)        
+    table.cell(table, 6, 3,"Low Beta (SPLV)", text_size = i_text_size, text_color = color.aqua)
+    table.cell(table, 7, 3,str.tostring(math.round(rocSPLV,2)), text_size = i_text_size, text_color = rocSPLV > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 6, 4,"Defensives (DEF)", text_size = i_text_size, text_color = color.maroon)
+    table.cell(table, 7, 4,str.tostring(math.round(rocDEF,2)), text_size = i_text_size, text_color = rocDEF > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 6, 5,"Mega Cap Growth (MGK)", text_size = i_text_size, text_color = color.red)
+    table.cell(table, 7, 5,str.tostring(math.round(rocMGK,2)), text_size = i_text_size, text_color = rocMGK > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 6, 6,"Dividends (SPHD) ", text_size = i_text_size, text_color = color.teal)
+    table.cell(table, 7, 6,str.tostring(math.round(rocSPHD,2)), text_size = i_text_size, text_color = rocSPHD > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 6, 7,"Growth (IWF)", text_size = i_text_size, text_color = color.orange)
+    table.cell(table, 7, 7,str.tostring(math.round(rocIWF,2)), text_size = i_text_size, text_color = rocIWF > 0 ? positive_color_input : negative_color_input)
+
+    table.cell(table, 6, 9, text = "High Beta (SPHB)", text_size = i_text_size, text_color = color.rgb(239, 136, 227))
+    table.cell(table, 7, 9,str.tostring(math.round(rocSPHB,2)), text_size = i_text_size, text_color = rocSPHB > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 6, 10, text = "Small Caps (IWM)", text_size = i_text_size, text_color = color.purple)
+    table.cell(table, 7, 10,str.tostring(math.round(rocIWM,2)), text_size = i_text_size, text_color = rocIWM > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 6, 11, text = "Cyclicals (IYT, IWN)", text_size = i_text_size, text_color = color.yellow)
+    table.cell(table, 7, 11,str.tostring(math.round(rocIYT,2)) + ", " + str.tostring(math.round(rocIWN,2)), text_size = i_text_size, text_color = rocIYT > 0 ? positive_color_input : negative_color_input)
+    table.cell(table, 6, 12, text = "Mid Caps (IWR)", text_size = i_text_size, text_color = color.blue)
+    table.cell(table, 7, 12,str.tostring(math.round(rocIWR,2)), text_size = i_text_size, text_color = rocIWR > 0 ? positive_color_input : negative_color_input)  
+    table.cell(table, 6, 13, text = "Value (IWD)", text_size = i_text_size, text_color = color.fuchsia)
+    table.cell(table, 7, 13,str.tostring(math.round(rocIWD,2)), text_size = i_text_size, text_color = rocIWD > 0 ? positive_color_input : negative_color_input)  
+    table.cell(table, 6, 15, text = "Deflation Probability: ", text_size = i_text_size, text_color = color.white)
+    table.cell(table, 7, 15,str.tostring(math.round(Deflation/Denumerator*100, 2))+"% | "+str.tostring(Deflation)+ " / 11", text_size = i_text_size, text_color = RiskCol)
+
+
+
+
+
+
+
