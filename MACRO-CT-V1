@@ -1,0 +1,407 @@
+//@version=6
+indicator("MACRO COMMAND CENTER v1.0", overlay=false, max_labels_count=500)
+
+// ==============================================================================
+// 1. GLOBAL SETTINGS & TOGGLES
+// ==============================================================================
+grp_global = "1. Global Settings"
+fixedTF     = input.timeframe("240", "Indicator Timeframe", options=["240", "D", "W"], group=grp_global)
+dash_y      = input.string("bottom", "Table Position", options=["top", "middle", "bottom"], group=grp_global, inline="pos")
+dash_x      = input.string("center", "",               options=["left", "center", "right"], group=grp_global, inline="pos")
+dash_orient = input.string("Vertical", "Table Orientation", options=["Vertical", "Horizontal"], group=grp_global)
+dash_size   = input.string("Tiny", "Text Size", options=["Tiny", "Small", "Normal", "Large"], group=grp_global)
+
+grp_toggles = "2. Module Toggles"
+show_comp   = input.bool(true, "Show Composite Score", group=grp_toggles)
+show_index  = input.bool(true, "Show Index Trend", group=grp_toggles)
+show_brdth  = input.bool(true, "Show Sector Breadth", group=grp_toggles)
+show_regime = input.bool(true, "Show Factor Regime", group=grp_toggles)
+show_implc  = input.bool(true, "Show Implied Correlation", group=grp_toggles)
+show_implP  = input.bool(true, "Show Implied Correlation Plot", group=grp_toggles)
+show_mmfi   = input.bool(true, "Show MMFI", group=grp_toggles)
+show_vix    = input.bool(true, "Show VIX", group=grp_toggles)
+show_vol    = input.bool(true, "Show Volume Rotation", group=grp_toggles)
+
+// ==============================================================================
+// 2. MODULE-SPECIFIC SETTINGS
+// ==============================================================================
+grp_idx = "3. Index Trend"
+idx_sym     = input.symbol("SPY", "Market Index Ticker", group=grp_idx)
+idx_smaLen  = input.int(200, "SMA Length for Bull/Bear", group=grp_idx)
+idx_chopPer = input.int(14, "Chop Index Period", group=grp_idx)
+idx_chopC   = input.float(61.8, "Chop: Chaos Threshold", group=grp_idx)
+idx_chopT   = input.float(50.0, "Chop: Transition Threshold", group=grp_idx)
+idx_chopTr  = input.float(38.2, "Chop: Trending Threshold", group=grp_idx)
+htf_tf      = input.timeframe("1W", "HTF Confirmation Timeframe", group=grp_idx)
+htf_emaLen  = input.int(20, "HTF EMA Length", group=grp_idx)
+
+grp_brd = "4. Sector Breadth"
+brd_tf      = input.timeframe("W", "Breadth Macro Timeframe", group=grp_brd)
+brd_vLen    = input.int(12, "Velocity Length (ROC period)", group=grp_brd)
+brd_aLen    = input.int(3, "Base Acceleration Length", group=grp_brd)
+brd_volW    = input.bool(true, "Include Volume Weight in Score", group=grp_brd)
+brd_volAvg  = input.int(20, "Volume Average Period (days)", group=grp_brd)
+brd_volThr  = input.float(1.3, "Volume Spike Threshold (x avg)", group=grp_brd)
+
+grp_reg = "5. Factor Regime"
+reg_rocLen  = input.int(14, "ROC Period for Regime", group=grp_reg)
+
+grp_corr = "6. Implied Correlation"
+cor_len     = input.int(14, "Correlation Length", group=grp_corr)
+cor_kFast   = input.int(7, "KAMA Fast Period", group=grp_corr)
+cor_kSlow   = input.int(19, "KAMA Slow Period", group=grp_corr)
+cor_kER     = input.int(8, "KAMA Efficiency Ratio Period", group=grp_corr)
+cor_kNorm   = input.int(10, "KAMA Normalization Lookback", group=grp_corr)
+cor_thr     = input.float(0.0, "ImplCorr Green Threshold", group=grp_corr)
+
+grp_mmfi = "7. MMFI"
+mmf_sLen    = input.int(10, "MMFI Short MA", group=grp_mmfi)
+mmf_lLen    = input.int(50, "MMFI Long MA", group=grp_mmfi)
+
+grp_vix = "8. VIX"
+vix_sLen    = input.int(10, "VIX Short MA", group=grp_vix)
+vix_bbLen   = input.int(20, "VIX Bollinger Length", group=grp_vix)
+vix_bbStd   = input.float(2.0, "VIX Bollinger StdDev", group=grp_vix)
+vix_elev    = input.float(20.0, "VIX Elevated Threshold", group=grp_vix)
+vix_fear    = input.float(30.0, "VIX Fear Threshold", group=grp_vix)
+vix_extr    = input.float(40.0, "VIX Extreme Threshold", group=grp_vix)
+
+// ==============================================================================
+// 3. ETF UNIVERSES
+// ==============================================================================
+syms = array.from(
+    "XLK", "XLV", "XLF", "XLE", "XLI", "XLY", "XLP", "XLU", "XLB", "XLC", "XLRE",
+    "SMH", "IGV", "XBI", "IBB", "KRE", "XOP", "XHB", "ITA", "JETS", "GDX", "URA",
+    "TAN", "IBIT", "TLT", "GRID", "QTUM")
+
+factor_syms = array.from("SPHB", "SPLV", "DEF", "IWM", "IYT", "MGK", "MTUM", "IWF")
+
+// ==============================================================================
+// 4. MODULE 1: INDEX TREND & REGIME
+// ==============================================================================
+f_chopIndex() =>
+    _atrSum = math.sum(ta.atr(1), idx_chopPer)
+    _range = ta.highest(high, idx_chopPer) - ta.lowest(low, idx_chopPer)
+    _range := _range == 0 ? 1 : _range
+    100 * math.log10(_atrSum / _range) / math.log10(idx_chopPer)
+
+[spy_close, spy_sma200, spy_chop] = request.security(idx_sym, fixedTF, [close, ta.sma(close, idx_smaLen), f_chopIndex()])
+[htf_close, htf_ema] = request.security(syminfo.tickerid, htf_tf, [close, ta.ema(close, htf_emaLen)])
+htfBullish = htf_close > htf_ema
+
+string idx_state = "SUPER TREND"
+float idx_score = 100
+if spy_close < spy_sma200
+    idx_state := "BEAR MKT", idx_score := 0
+else if spy_chop > idx_chopC
+    idx_state := "CHOP/CHAOS", idx_score := 20
+else if spy_chop > idx_chopT
+    idx_state := "TRANSITION", idx_score := 50
+else if spy_chop > idx_chopTr
+    idx_state := "TRENDING", idx_score := 75
+
+// ==============================================================================
+// 5. MODULE 2: SECTOR BREADTH (Druckenmiller) & LIQUIDITY
+// ==============================================================================
+[tnx_change] = request.security("TNX", timeframe.period, [ta.change(close)])
+bool liquidity_stress = nz(tnx_change) > 0
+
+int rip_c = 0, int trn_c = 0, int top_c = 0, int crs_c = 0
+int hot_acc_c = 0, int hot_total = 0
+string[] hot_syms = array.new_string()
+float[] hot_vols = array.new_float()
+string[] hot_dirs = array.new_string()
+
+// HELPER: Encapsulates TA functions to avoid warnings inside loops
+f_breadth_calc(vLen, aLen, vAvg) =>
+    v = ta.roc(close, vLen)
+    a = ta.change(v, aLen)
+    vr = volume / math.max(1, ta.sma(volume, vAvg))
+    [v, a, vr]
+
+for i = 0 to array.size(syms) - 1
+    string s = array.get(syms, i)
+    [vel, acc, vol_ratio] = request.security(s, brd_tf, f_breadth_calc(brd_vLen, brd_aLen, brd_volAvg), ignore_invalid_symbol=true)
+    
+    // Phase calculation
+    int phase = (vel > 0 and acc > 0) ? 4 : (vel <= 0 and acc > 0) ? 3 : (vel > 0 and acc < 0) ? 2 : 1
+    
+    // Weighting
+    float w = (brd_volW and vol_ratio > brd_volThr) ? 1.5 : 1.0
+    if phase == 4
+        rip_c += math.round(w)
+    else if phase == 3
+        trn_c += math.round(w)
+    else if phase == 2
+        top_c += math.round(w)
+    else
+        crs_c += math.round(w)
+        
+    // Volume Rotation Tracking
+    if vol_ratio > brd_volThr
+        hot_total += 1
+        string dir = vel > 0 ? "ACC" : vel < 0 ? "DIST" : "NEUT"
+        if dir == "ACC"
+            hot_acc_c += 1
+        array.push(hot_syms, s)
+        array.push(hot_vols, vol_ratio)
+        array.push(hot_dirs, dir)
+
+int total_brd = math.max(1, rip_c + trn_c + top_c + crs_c)
+float raw_score = (rip_c * 2 + trn_c * 1 - top_c * 1 - crs_c * 2)
+float brd_score = ((raw_score + 2 * total_brd) / (4 * total_brd)) * 100
+
+float fast_breadth = (rip_c + trn_c) / total_brd
+bool breadth_thrust = fast_breadth > 0.60 and nz(fast_breadth[3]) < 0.30
+int bars_since_thrust = nz(ta.barssince(breadth_thrust))
+
+// ==============================================================================
+// 6. MODULE 3 & 4: FACTOR REGIME & IMPLIED CORRELATION (CE)
+// ==============================================================================
+f_kama(asset) =>
+    change = math.abs(asset - nz(asset[cor_kER]))
+    volatility = math.sum(math.abs(asset - nz(asset[1])), cor_kER)
+    er = volatility == 0 ? 0 : change / volatility
+    sc = er * (2/(cor_kFast+1) - 2/(cor_kSlow+1)) + 2/(cor_kSlow+1)
+    kama_val = ta.ema(asset, cor_kFast) + sc * (asset - ta.ema(asset, cor_kFast))
+    lowest = ta.lowest(kama_val, cor_kNorm)
+    highest = ta.highest(kama_val, cor_kNorm)
+    normalized = highest == lowest ? 0 : (kama_val - lowest) / (highest - lowest) - 0.5
+    normalized > 0 ? 1 : -1
+
+// HELPER: Encapsulates TA functions to avoid warnings inside loops
+f_factor_calc(base_c, rocLen, corrLen) =>
+    r = ta.roc(close, rocLen)
+    c = ta.correlation(base_c, close, corrLen)
+    k = f_kama(close)
+    [r, c, k]
+
+float[] f_rocs = array.new_float()
+float[] f_impl = array.new_float()
+
+for i = 0 to array.size(factor_syms) - 1
+    string f = array.get(factor_syms, i)
+    [f_roc, f_corr, f_trend] = request.security(f, "D", f_factor_calc(close, reg_rocLen, cor_len), ignore_invalid_symbol=true)
+    
+    array.push(f_rocs, nz(f_roc))
+    array.push(f_impl, nz(f_corr * f_trend))
+
+float avg_roc = array.avg(f_rocs)
+float r_SPHB = array.get(f_rocs, 0) - avg_roc
+float r_SPLV = array.get(f_rocs, 1) - avg_roc
+float r_DEF  = array.get(f_rocs, 2) - avg_roc
+float r_IWM  = array.get(f_rocs, 3) - avg_roc
+float r_IYT  = array.get(f_rocs, 4) - avg_roc
+float r_MGK  = array.get(f_rocs, 5) - avg_roc
+float r_MTUM = array.get(f_rocs, 6) - avg_roc
+float r_IWF  = array.get(f_rocs, 7) - avg_roc
+
+// Regimes
+float g_locs = (r_SPHB>0?1:0) + (r_IWM>0?1:0) + (r_MGK>0?1:0) + (r_IYT>0?1:0) + (r_SPLV<0?1:0) + (r_DEF<0?1:0)
+float refla  = (r_SPHB>0?1:0) + (r_IWM>0?1:0) + (r_MGK>0?1:0) + (r_IYT>0?1:0) + (r_MTUM>0?1:0) + (r_SPLV<0?1:0) + (r_DEF<0?1:0)
+float infla  = (r_SPLV>0?1:0) + (r_DEF>0?1:0) + (r_MGK>0?1:0) + (r_SPHB<0?1:0) + (r_IWM<0?1:0) + (r_IYT<0?1:0)
+float defla  = (r_SPLV>0?1:0) + (r_DEF>0?1:0) + (r_MGK>0?1:0) + (r_IWF>0?1:0) + (r_SPHB<0?1:0) + (r_IWM<0?1:0) + (r_IYT<0?1:0)
+
+float total_reg = math.max(1, g_locs + refla + infla + defla)
+bool risk_on = (g_locs > infla or g_locs > defla or refla > infla or refla > defla)
+
+float reg_score = risk_on ? 80 : 20
+reg_score := reg_score * (g_locs / total_reg + 0.5) // Minor scaling
+
+// Correlation Engine
+float ImplCorrAvg = array.avg(f_impl)
+bool first_green = ImplCorrAvg > cor_thr and nz(ImplCorrAvg[1]) <= cor_thr
+int bars_since_green = nz(ta.barssince(first_green))
+float corr_score = math.max(0, math.min(100, (ImplCorrAvg + 1) * 50))
+
+// ==============================================================================
+// 7. MODULE 5: MMFI
+// ==============================================================================
+[mmfi_c, mmfi_c1, mmfi_s10, mmfi_s50] = request.security("MMFI", "D", [close, close[1], ta.sma(close, mmf_sLen), ta.sma(close, mmf_lLen)], ignore_invalid_symbol=true)
+
+string mmfi_zone = "NEUTRAL"
+float mmfi_score = 50
+if mmfi_c < 20
+    mmfi_zone := "CAPITULATION", mmfi_score := 85
+else if mmfi_c < 40
+    mmfi_zone := "BEARISH", mmfi_score := 30
+else if mmfi_c > 80
+    mmfi_zone := "OVERHEATED", mmfi_score := 40
+else if mmfi_c > 60
+    mmfi_zone := "HEALTHY", mmfi_score := 75
+
+bool mmfi_rising = mmfi_c > mmfi_c1
+if mmfi_rising and mmfi_c > mmfi_s10 and mmfi_c > mmfi_s50
+    mmfi_score += 10
+else if not mmfi_rising and mmfi_c < mmfi_s10 and mmfi_c < mmfi_s50
+    mmfi_score -= 10
+
+// ==============================================================================
+// 8. MODULE 6: VIX
+// ==============================================================================
+[vix_c, vix_s10, vix_bbM, vix_bbSt] = request.security("VIX", "D", [close, ta.sma(close, vix_sLen), ta.sma(close, vix_bbLen), ta.stdev(close, vix_bbLen)], ignore_invalid_symbol=true)
+float vix_bbU = vix_bbM + (vix_bbStd * vix_bbSt)
+
+string vix_zone = "COMPLACENT"
+float vix_score = 70
+string vix_act = "NO ACTION / TAKE PROFITS"
+int vix_zone_code = 0
+
+if vix_c > vix_extr
+    vix_zone := "EXTREME", vix_score := 75, vix_act := "MAX HEDGE / PREPARE FOR REVERSAL", vix_zone_code := 3
+else if vix_c > vix_fear
+    vix_zone := "FEAR", vix_score := 60, vix_act := "HEDGE ACTIVE / LOOK FOR CAPIT", vix_zone_code := 2
+else if vix_c > vix_elev
+    vix_zone := "ELEVATED", vix_score := 45, vix_act := "REDUCE SIZE / TIGHTEN STOPS", vix_zone_code := 1
+
+// ==============================================================================
+// 9. COMPOSITE SCORE & ZONES
+// ==============================================================================
+float composite_score = (idx_score * 0.20) + (brd_score * 0.25) + (reg_score * 0.10) + (corr_score * 0.10) + (mmfi_score * 0.15) + (vix_score * 0.20)
+
+string action_text = "CASH / HEDGE"
+int action_code = 0
+color action_col = color.red
+if composite_score >= 80
+    action_text := "AGGRESSIVE", action_code := 4, action_col := #0F6E56
+else if composite_score >= 60
+    action_text := "FULL SIZE", action_code := 3, action_col := #1D9B52
+else if composite_score >= 40
+    action_text := "HALF SIZE", action_code := 2, action_col := #854F0B
+else if composite_score >= 20
+    action_text := "TRAPS ONLY", action_code := 1, action_col := #A32D2D
+
+// ==============================================================================
+// 10. ALERTS & PLOTS
+// ==============================================================================
+alertcondition(breadth_thrust, "Breadth Thrust!", "Breadth thrust detected on Macro Command Center")
+alertcondition(action_code != nz(action_code[1]), "Action Zone Changed", "Macro action zone changed")
+alertcondition(first_green, "ImplCorr First Green", "Implied correlation turned positive — first green bar")
+
+// FIX: String comparison does not use nz()
+alertcondition(vix_zone != vix_zone[1], "VIX Zone Change", "VIX zone changed")
+
+plot(show_implP ? ImplCorrAvg : na, "Implied Correlation Avg", ImplCorrAvg > 0.1 ? color.green : ImplCorrAvg < -0.1 ? color.red : color.gray, style = plot.style_columns)
+hline(show_implP ? 0.1 : na, color = color.green, linewidth = 2)
+hline(show_implP ? 0 : na)
+hline(show_implP ? -0.1 : na, color = color.red, linewidth = 2)
+
+// Data Window Outputs
+plot(composite_score, "Macro Score", display=display.data_window)
+plot(action_code, "Action Code", display=display.data_window)
+plot(risk_on ? 1 : 0, "Risk", display=display.data_window)
+plot(first_green ? 1 : 0, "ImplCorr Green", display=display.data_window)
+plot(vix_zone_code, "VIX Zone", display=display.data_window)
+plot(brd_score, "Breadth", display=display.data_window)
+
+// ==============================================================================
+// 11. DASHBOARD TABLE
+// ==============================================================================
+var string t_pos = dash_y + "_" + dash_x
+var string size_str = dash_size == "Tiny" ? size.tiny : dash_size == "Small" ? size.small : dash_size == "Large" ? size.large : size.normal
+var table dash = table.new(t_pos, 10, 30, bgcolor=color.new(color.black, 80), border_width=1, frame_color=color.gray, border_color=color.new(color.white, 80))
+
+// Utility to write cells
+f_write(col, row, lbl, val, bg_col) =>
+    c = dash_orient == "Vertical" ? 0 : col
+    r = dash_orient == "Vertical" ? row : 0
+    table.cell(dash, c, r, lbl, text_color=color.gray, text_size=size_str, text_halign=text.align_left)
+    table.cell(dash, c+1, r, val, text_color=color.white, bgcolor=bg_col, text_size=size_str, text_halign=text.align_right)
+
+if barstate.islast
+    int row = 0
+    color bg_G = color.new(color.green, 78)
+    color bg_R = color.new(color.red, 78)
+    color bg_A = color.new(color.orange, 78)
+    color bg_N = color.new(color.blue, 78)
+
+    if show_comp
+        table.merge_cells(dash, 0, row, 1, row)
+        table.cell(dash, 0, row, "COMPOSITE SCORE", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+        row += 1
+        f_write(0, row, "Macro Score", str.tostring(composite_score, "#.1"), composite_score > 60 ? bg_G : composite_score < 40 ? bg_R : bg_A)
+        row += 1
+        f_write(0, row, "Action Zone", action_text, color.new(action_col, 50))
+        row += 1
+
+    if show_index
+        table.merge_cells(dash, 0, row, 1, row)
+        table.cell(dash, 0, row, "INDEX TREND", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+        row += 1
+        f_write(0, row, "SPY Trend", spy_close > spy_sma200 ? "ABOVE 200" : "BELOW 200", spy_close > spy_sma200 ? bg_G : bg_R)
+        row += 1
+        f_write(0, row, "Chop Index", idx_state + " (" + str.tostring(spy_chop, "#.1") + ")", spy_chop < idx_chopTr ? bg_G : bg_A)
+        row += 1
+        f_write(0, row, "HTF Weekly", htfBullish ? "BULLISH" : "BEARISH", htfBullish ? bg_G : bg_R)
+        row += 1
+
+    if show_brdth
+        table.merge_cells(dash, 0, row, 1, row)
+        table.cell(dash, 0, row, "SECTOR BREADTH", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+        row += 1
+        f_write(0, row, "Breadth Score", str.tostring(brd_score, "#.1"), brd_score > 60 ? bg_G : brd_score < 40 ? bg_R : bg_A)
+        row += 1
+        string p_txt = str.tostring(rip_c) + "R | " + str.tostring(trn_c) + "T | " + str.tostring(top_c) + "Tp | " + str.tostring(crs_c) + "C"
+        f_write(0, row, "Phase Counts", p_txt, bg_N)
+        row += 1
+        f_write(0, row, "Breadth Thrust", breadth_thrust ? "YES (0)" : "NO (" + str.tostring(bars_since_thrust) + " ago)", breadth_thrust ? bg_G : bg_N)
+        row += 1
+        f_write(0, row, "Liquidity", liquidity_stress ? "TIGHT" : "OK", liquidity_stress ? bg_R : bg_G)
+        row += 1
+
+    if show_regime
+        table.merge_cells(dash, 0, row, 1, row)
+        table.cell(dash, 0, row, "FACTOR REGIME", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+        row += 1
+        f_write(0, row, "Risk State", risk_on ? "RISK ON" : "RISK OFF", risk_on ? bg_G : bg_R)
+        row += 1
+        string reg_txt = g_locs > infla and g_locs > defla ? "GOLDILOCKS" : refla > infla and refla > defla ? "REFLATION" : infla > defla ? "INFLATION" : "DEFLATION"
+        f_write(0, row, "Leading Regime", reg_txt, risk_on ? bg_G : bg_R)
+        row += 1
+
+    if show_implc
+        table.merge_cells(dash, 0, row, 1, row)
+        table.cell(dash, 0, row, "IMPLIED CORRELATION", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+        row += 1
+        f_write(0, row, "ImplCorr Avg", str.tostring(ImplCorrAvg, "#.2"), ImplCorrAvg > 0.1 ? bg_G : ImplCorrAvg < -0.1 ? bg_R : bg_N)
+        row += 1
+        f_write(0, row, "First Green", first_green ? "YES" : str.tostring(bars_since_green) + " ago", first_green ? bg_G : bg_N)
+        row += 1
+
+    if show_mmfi
+        table.merge_cells(dash, 0, row, 1, row)
+        table.cell(dash, 0, row, "MMFI", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+        row += 1
+        f_write(0, row, "MMFI Value", str.tostring(mmfi_c, "#.1"), mmfi_c > 60 and mmfi_c < 80 ? bg_G : mmfi_c < 20 ? bg_G : bg_R)
+        row += 1
+        f_write(0, row, "MMFI Zone", mmfi_zone, mmfi_zone == "CAPITULATION" or mmfi_zone == "HEALTHY" ? bg_G : bg_A)
+        row += 1
+        f_write(0, row, "MMFI Trend", mmfi_rising ? "RISING" : "FALLING", mmfi_rising ? bg_G : bg_R)
+        row += 1
+
+    if show_vix
+        table.merge_cells(dash, 0, row, 1, row)
+        table.cell(dash, 0, row, "VOLATILITY (VIX)", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+        row += 1
+        f_write(0, row, "VIX Value", str.tostring(vix_c, "#.2"), vix_c < vix_elev ? bg_G : vix_c > vix_fear ? bg_R : bg_A)
+        row += 1
+        f_write(0, row, "VIX Zone", vix_zone, vix_c > vix_extr ? bg_G : vix_c > vix_elev ? bg_R : bg_N)
+        row += 1
+        f_write(0, row, "Hedge Signal", vix_act, vix_c > vix_fear ? bg_R : bg_G)
+        row += 1
+
+    if show_vol
+        table.merge_cells(dash, 0, row, 1, row)
+        table.cell(dash, 0, row, "VOLUME ROTATION", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+        row += 1
+        f_write(0, row, "Hot Sectors", str.tostring(hot_total) + " / " + str.tostring(array.size(syms)), hot_total > 5 ? bg_G : bg_N)
+        row += 1
+        
+        string v_str = ""
+        if array.size(hot_syms) > 0
+            for i = 0 to math.min(3, array.size(hot_syms)) - 1
+                v_str := v_str + array.get(hot_syms, i) + " (" + array.get(hot_dirs, i) + ") "
+        else
+            v_str := "NONE"
+        
+        f_write(0, row, "Top Hot", v_str, bg_N)
