@@ -6,8 +6,8 @@ indicator("MACRO COMMAND CENTER v2.0", overlay=true, max_labels_count=500)
 // ==============================================================================
 grp_global = "1. Global Settings"
 fixedTF     = input.timeframe("240", "Indicator Timeframe", options=["240", "D", "W"], group=grp_global)
-dash_y      = input.string("bottom", "Table Position", options=["top", "middle", "bottom"], group=grp_global, inline="pos")
-dash_x      = input.string("center", "",               options=["left", "center", "right"], group=grp_global, inline="pos")
+dash_y      = input.string("top", "Table Position", options=["top", "middle", "bottom"], group=grp_global, inline="pos")
+dash_x      = input.string("right", "",               options=["left", "center", "right"], group=grp_global, inline="pos")
 dash_orient = input.string("Vertical", "Table Orientation", options=["Vertical", "Horizontal"], group=grp_global)
 dash_size   = input.string("Tiny", "Text Size", options=["Tiny", "Small", "Normal", "Large"], group=grp_global)
 
@@ -47,7 +47,7 @@ grp_reg = "5. Factor Regime"
 reg_rocLen  = input.int(14, "ROC Period for Regime", group=grp_reg)
 
 grp_corr = "6. Implied Correlation"
-cor_tf      = input.timeframe("D", "Implied Corr Timeframe", group=grp_corr)
+cor_tf      = input.timeframe("240", "Implied Corr Timeframe", group=grp_corr)
 cor_len     = input.int(14, "Correlation Length", group=grp_corr)
 cor_kFast   = input.int(7, "KAMA Fast Period", group=grp_corr)
 cor_kSlow   = input.int(19, "KAMA Slow Period", group=grp_corr)
@@ -66,6 +66,17 @@ vix_bbStd   = input.float(2.0, "VIX Bollinger StdDev", group=grp_vix)
 vix_elev    = input.float(20.0, "VIX Elevated Threshold", group=grp_vix)
 vix_fear    = input.float(30.0, "VIX Fear Threshold", group=grp_vix)
 vix_extr    = input.float(40.0, "VIX Extreme Threshold", group=grp_vix)
+
+grp_colors = "9. Dashboard Colors"
+dash_bg_col = input.color(color.black, "Dashboard Background", group=grp_colors)
+dash_transp = input.int(15, "Dashboard Transparency (0=Solid, 100=Invisible)", minval=0, maxval=100, group=grp_colors)
+col_bull    = input.color(#0F6E56, "Bullish Color (Green)", group=grp_colors)
+col_bear    = input.color(#A32D2D, "Bearish Color (Red)", group=grp_colors)
+col_warn    = input.color(#854F0B, "Warning Color (Orange)", group=grp_colors)
+col_neut    = input.color(#185FA5, "Neutral Color (Blue)", group=grp_colors)
+col_head_bg = input.color(#424242, "Header Background Color", group=grp_colors)
+col_head_txt= input.color(color.white, "Header Text Color", group=grp_colors)
+col_lbl_txt = input.color(color.white, "Row Label Text Color", group=grp_colors)
 
 // ==============================================================================
 // 3. ETF UNIVERSES
@@ -144,7 +155,7 @@ for i = 0 to array.size(syms) - 1
     // Weekly Hot Sectors
     if vol_ratio > brd_volThr
         hot_total += 1
-        string dir = vel > 0 ? "ACC" : vel < 0 ? "DIST" : "NEUT"
+        string dir = vel > 0 ? "▲" : vel < 0 ? "▼" : "◼"
         array.push(hot_syms, s)
         array.push(hot_vols, vol_ratio)
         array.push(hot_dirs, dir)
@@ -158,7 +169,7 @@ for i = 0 to array.size(spdr_syms) - 1
     // Daily Hot Sectors
     if vol_ratio_d > brd_volThr
         hot_total_D += 1
-        string dir_d = vel_d > 0 ? "ACC" : vel_d < 0 ? "DIST" : "NEUT"
+        string dir_d = vel_d > 0 ? "▲" : vel_d < 0 ? "▼" : "◼"
         array.push(hot_syms_D, s_d)
         array.push(hot_vols_D, vol_ratio_d)
         array.push(hot_dirs_D, dir_d)
@@ -180,8 +191,9 @@ f_sort_arrays(vols, syms, dirs) =>
                     array.set(dirs, j, array.get(dirs, j+1))
                     array.set(dirs, j+1, tmp_d)
 
-f_sort_arrays(hot_vols, hot_syms, hot_dirs)
-f_sort_arrays(hot_vols_D, hot_syms_D, hot_dirs_D)
+if barstate.islast
+    f_sort_arrays(hot_vols, hot_syms, hot_dirs)
+    f_sort_arrays(hot_vols_D, hot_syms_D, hot_dirs_D)
 
 float total_brd = math.max(1, rip_c + trn_c + top_c + crs_c)
 float raw_score = (rip_c * 2 + trn_c * 1 - top_c * 1 - crs_c * 2)
@@ -383,9 +395,9 @@ f_getPos(y, x) =>
         "bottom_right"  => position.bottom_right
         => position.bottom_center
 
-int t_cols = dash_orient == "Vertical" ? 2 : 50
-int t_rows = dash_orient == "Vertical" ? 30 : 4
-var table dash = table.new(f_getPos(dash_y, dash_x), t_cols, t_rows, bgcolor=color.new(color.black, 80), border_width=1, frame_color=color.gray, border_color=color.new(color.white, 80))
+int t_cols = dash_orient == "Vertical" ? 2 : 60
+int t_rows = dash_orient == "Vertical" ? 40 : 4
+var table dash = table.new(f_getPos(dash_y, dash_x), t_cols, t_rows, bgcolor=color.new(dash_bg_col, dash_transp), border_width=1, frame_color=color.gray, border_color=color.new(color.white, dash_transp + 10))
 
 size_str = switch dash_size
     "Tiny"   => size.tiny
@@ -398,25 +410,25 @@ var h_col_ptr = array.new_int(1, 0)
 f_write(int v_row, string lbl, string val, color bg_col) =>
     int current_h_col = array.get(h_col_ptr, 0)
     if dash_orient == "Vertical"
-        table.cell(dash, 0, v_row, lbl, text_color=color.gray, text_size=size_str, text_halign=text.align_left)
+        table.cell(dash, 0, v_row, lbl, text_color=col_lbl_txt, text_size=size_str, text_halign=text.align_left)
         table.cell(dash, 1, v_row, val, text_color=color.white, bgcolor=bg_col, text_size=size_str, text_halign=text.align_right)
     else
-        table.cell(dash, current_h_col, 0, lbl, text_color=color.gray, text_size=size_str, text_halign=text.align_center)
+        table.cell(dash, current_h_col, 0, lbl, text_color=col_lbl_txt, text_size=size_str, text_halign=text.align_center)
         table.cell(dash, current_h_col, 1, val, text_color=color.white, bgcolor=bg_col, text_size=size_str, text_halign=text.align_center)
         array.set(h_col_ptr, 0, current_h_col + 1)
 
 if barstate.islast
     array.set(h_col_ptr, 0, 0)
     int row = 0
-    color bg_G = color.new(color.green, 78)
-    color bg_R = color.new(color.red, 78)
-    color bg_A = color.new(color.orange, 78)
-    color bg_N = color.new(color.blue, 78)
+    color bg_G = color.new(col_bull, dash_transp)
+    color bg_R = color.new(col_bear, dash_transp)
+    color bg_A = color.new(col_warn, dash_transp)
+    color bg_N = color.new(col_neut, dash_transp)
 
     if show_comp
         if dash_orient == "Vertical"
             table.merge_cells(dash, 0, row, 1, row)
-            table.cell(dash, 0, row, "COMPOSITE SCORE", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+            table.cell(dash, 0, row, "COMPOSITE SCORE", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
         f_write(row, "Macro Score", str.tostring(composite_score, "#.1"), composite_score > 60 ? bg_G : composite_score < 40 ? bg_R : bg_A)
         row += 1
@@ -426,7 +438,7 @@ if barstate.islast
     if show_index
         if dash_orient == "Vertical"
             table.merge_cells(dash, 0, row, 1, row)
-            table.cell(dash, 0, row, "INDEX TREND", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+            table.cell(dash, 0, row, "INDEX TREND", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
         f_write(row, "SPY Trend", spy_close > spy_sma200 ? "ABOVE 200" : "BELOW 200", spy_close > spy_sma200 ? bg_G : bg_R)
         row += 1
@@ -438,7 +450,7 @@ if barstate.islast
     if show_brdth
         if dash_orient == "Vertical"
             table.merge_cells(dash, 0, row, 1, row)
-            table.cell(dash, 0, row, "SECTOR BREADTH", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+            table.cell(dash, 0, row, "SECTOR BREADTH", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
         f_write(row, "Breadth Score", str.tostring(brd_score, "#.1"), brd_score > 60 ? bg_G : brd_score < 40 ? bg_R : bg_A)
         row += 1
@@ -453,7 +465,7 @@ if barstate.islast
     if show_regime
         if dash_orient == "Vertical"
             table.merge_cells(dash, 0, row, 1, row)
-            table.cell(dash, 0, row, "FACTOR REGIME", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+            table.cell(dash, 0, row, "FACTOR REGIME", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
         f_write(row, "Risk State", risk_on ? "RISK ON" : "RISK OFF", risk_on ? bg_G : bg_R)
         row += 1
@@ -464,7 +476,7 @@ if barstate.islast
     if show_implc
         if dash_orient == "Vertical"
             table.merge_cells(dash, 0, row, 1, row)
-            table.cell(dash, 0, row, "IMPLIED CORRELATION", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+            table.cell(dash, 0, row, "IMPLIED CORRELATION", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
         f_write(row, "ImplCorr Avg", str.tostring(ImplCorrAvg, "#.2"), ImplCorrAvg > 0.1 ? bg_G : ImplCorrAvg < -0.1 ? bg_R : bg_N)
         row += 1
@@ -474,7 +486,7 @@ if barstate.islast
     if show_mmfi
         if dash_orient == "Vertical"
             table.merge_cells(dash, 0, row, 1, row)
-            table.cell(dash, 0, row, "MMFI", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+            table.cell(dash, 0, row, "MMFI", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
         f_write(row, "MMFI Value", str.tostring(mmfi_c, "#.1"), mmfi_c > 60 and mmfi_c < 80 ? bg_G : mmfi_c < 20 ? bg_G : bg_R)
         row += 1
@@ -487,7 +499,7 @@ if barstate.islast
     if show_vix
         if dash_orient == "Vertical"
             table.merge_cells(dash, 0, row, 1, row)
-            table.cell(dash, 0, row, "VOLATILITY (VIX)", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+            table.cell(dash, 0, row, "VOLATILITY (VIX)", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
         f_write(row, "VIX Value", str.tostring(vix_c, "#.2"), vix_c < vix_elev ? bg_G : vix_c > vix_fear ? bg_R : bg_A)
         row += 1
@@ -502,7 +514,7 @@ if barstate.islast
     if show_vol
         if dash_orient == "Vertical"
             table.merge_cells(dash, 0, row, 1, row)
-            table.cell(dash, 0, row, "VOLUME ROTATION", text_color=color.white, bgcolor=color.new(color.gray, 60), text_size=size_str)
+            table.cell(dash, 0, row, "VOLUME ROTATION", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
         f_write(row, "Hot Sectors (W)", str.tostring(hot_total) + " / 27", hot_total > 5 ? bg_G : bg_N)
         row += 1
@@ -512,7 +524,7 @@ if barstate.islast
         string v_str_w = ""
         if array.size(hot_syms) > 0
             for i = 0 to math.min(3, array.size(hot_syms) - 1)
-                v_str_w += array.get(hot_syms, i) + " " + str.tostring(array.get(hot_vols, i), "#.1") + "x(" + array.get(hot_dirs, i) + ") "
+                v_str_w += array.get(hot_syms, i) + " " + str.tostring(array.get(hot_vols, i), "#.1") + "x" + array.get(hot_dirs, i) + " "
         else
             v_str_w := "NONE"
         f_write(row, "Top Hot (W)", v_str_w, bg_N)
@@ -521,7 +533,7 @@ if barstate.islast
         string v_str_d = ""
         if array.size(hot_syms_D) > 0
             for i = 0 to math.min(3, array.size(hot_syms_D) - 1)
-                v_str_d += array.get(hot_syms_D, i) + " " + str.tostring(array.get(hot_vols_D, i), "#.1") + "x(" + array.get(hot_dirs_D, i) + ") "
+                v_str_d += array.get(hot_syms_D, i) + " " + str.tostring(array.get(hot_vols_D, i), "#.1") + "x" + array.get(hot_dirs_D, i) + " "
         else
             v_str_d := "NONE"
         f_write(row, "Top Hot (D)", v_str_d, bg_N)
