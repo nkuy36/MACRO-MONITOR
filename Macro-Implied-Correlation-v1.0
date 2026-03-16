@@ -1,0 +1,121 @@
+//@version=6
+indicator("Macro Implied Correlation v1.0", overlay=false)
+
+// Settings
+fixedTF    = input.timeframe("240", "Indicator Timeframe", options=["60", "240", "D", "W"])
+cor_len    = input.int(14, "Correlation Length")
+cor_kFast  = input.int(7, "KAMA Fast Period")
+cor_kSlow  = input.int(19, "KAMA Slow Period")
+cor_kER    = input.int(8, "KAMA Efficiency Ratio Period")
+cor_kNorm  = input.int(10, "KAMA Normalization Lookback")
+cor_thr    = input.float(0.0, "Green Threshold")
+reg_rocLen = input.int(14, "ROC Period for Regime")
+
+// Full 15 CE Factor ETFs
+f_kama(asset) =>
+    change = math.abs(asset - nz(asset[cor_kER]))
+    volatility = math.sum(math.abs(asset - nz(asset[1])), cor_kER)
+    er = volatility == 0 ? 0 : change / volatility
+    sc = er * (2/(cor_kFast+1) - 2/(cor_kSlow+1)) + 2/(cor_kSlow+1)
+    kama_val = ta.ema(asset, cor_kFast) + sc * (asset - ta.ema(asset, cor_kFast))
+    lowest = ta.lowest(kama_val, cor_kNorm)
+    highest = ta.highest(kama_val, cor_kNorm)
+    normalized = highest == lowest ? 0 : (kama_val - lowest) / (highest - lowest) - 0.5
+    normalized > 0 ? 1 : -1
+
+float fc_SPHD = request.security("SPHD", fixedTF, close, ignore_invalid_symbol=true)
+float fc_SPLV = request.security("SPLV", fixedTF, close, ignore_invalid_symbol=true)
+float fc_QUAL = request.security("QUAL", fixedTF, close, ignore_invalid_symbol=true)
+float fc_DEF  = request.security("DEF",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_IWF  = request.security("IWF",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_SPHB = request.security("SPHB", fixedTF, close, ignore_invalid_symbol=true)
+float fc_IYT  = request.security("IYT",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_IWN  = request.security("IWN",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_IWD  = request.security("IWD",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_IWM  = request.security("IWM",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_IWR  = request.security("IWR",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_MGK  = request.security("MGK",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_OEF  = request.security("OEF",  fixedTF, close, ignore_invalid_symbol=true)
+float fc_MTUM = request.security("MTUM", fixedTF, close, ignore_invalid_symbol=true)
+float fc_IWB  = request.security("IWB",  fixedTF, close, ignore_invalid_symbol=true)
+
+// ROC Computations
+float roc_SPHD = ta.roc(fc_SPHD, reg_rocLen)
+float roc_SPLV = ta.roc(fc_SPLV, reg_rocLen)
+float roc_QUAL = ta.roc(fc_QUAL, reg_rocLen)
+float roc_DEF  = ta.roc(fc_DEF,  reg_rocLen)
+float roc_IWF  = ta.roc(fc_IWF,  reg_rocLen)
+float roc_SPHB = ta.roc(fc_SPHB, reg_rocLen)
+float roc_IYT  = ta.roc(fc_IYT,  reg_rocLen)
+float roc_IWN  = ta.roc(fc_IWN,  reg_rocLen)
+float roc_IWD  = ta.roc(fc_IWD,  reg_rocLen)
+float roc_IWM  = ta.roc(fc_IWM,  reg_rocLen)
+float roc_IWR  = ta.roc(fc_IWR,  reg_rocLen)
+float roc_MGK  = ta.roc(fc_MGK,  reg_rocLen)
+float roc_OEF  = ta.roc(fc_OEF,  reg_rocLen)
+float roc_MTUM = ta.roc(fc_MTUM, reg_rocLen)
+float roc_IWB  = ta.roc(fc_IWB,  reg_rocLen)
+
+float avg_roc = nz((roc_SPHD + roc_SPLV + roc_QUAL + roc_DEF + roc_IWF + roc_SPHB + roc_IYT + roc_IWN + roc_IWD + roc_IWM + roc_IWR + roc_MGK + roc_OEF + roc_MTUM + roc_IWB) / 15)
+
+// Relative ROC Computations
+float r_SPHD = roc_SPHD - avg_roc
+float r_SPLV = roc_SPLV - avg_roc
+float r_QUAL = roc_QUAL - avg_roc
+float r_DEF  = roc_DEF  - avg_roc
+float r_IWF  = roc_IWF  - avg_roc
+float r_SPHB = roc_SPHB - avg_roc
+float r_IYT  = roc_IYT  - avg_roc
+float r_IWN  = roc_IWN  - avg_roc
+float r_IWD  = roc_IWD  - avg_roc
+float r_IWM  = roc_IWM  - avg_roc
+float r_IWR  = roc_IWR  - avg_roc
+float r_MGK  = roc_MGK  - avg_roc
+float r_OEF  = roc_OEF  - avg_roc
+float r_MTUM = roc_MTUM - avg_roc
+float r_IWB  = roc_IWB  - avg_roc
+
+// Regime Scoring
+float g_locs = (r_SPHB>0?1:0) + (r_IWM>0?1:0) + (r_MGK>0?1:0) + (r_IYT>0?1:0) + (r_IWN>0?1:0) + (r_IWR>0?1:0) + (r_SPLV<0?1:0) + (r_DEF<0?1:0) + (r_SPHD<0?1:0) + (r_QUAL<0?1:0) + (r_OEF<0?1:0)
+float refla  = (r_SPHB>0?1:0) + (r_IWM>0?1:0) + (r_MGK>0?1:0) + (r_IYT>0?1:0) + (r_IWN>0?1:0) + (r_MTUM>0?1:0) + (r_SPLV<0?1:0) + (r_DEF<0?1:0) + (r_SPHD<0?1:0) + (r_QUAL<0?1:0) + (r_IWB<0?1:0)
+float infla  = (r_SPLV>0?1:0) + (r_DEF>0?1:0) + (r_MGK>0?1:0) + (r_SPHD>0?1:0) + (r_QUAL>0?1:0) + (r_SPHB<0?1:0) + (r_IWM<0?1:0) + (r_IYT<0?1:0) + (r_IWN<0?1:0) + (r_IWR<0?1:0) + (r_IWD<0?1:0)
+float defla  = (r_SPLV>0?1:0) + (r_DEF>0?1:0) + (r_MGK>0?1:0) + (r_SPHD>0?1:0) + (r_IWF>0?1:0) + (r_SPHB<0?1:0) + (r_IWM<0?1:0) + (r_IYT<0?1:0) + (r_IWN<0?1:0) + (r_IWR<0?1:0) + (r_IWD<0?1:0)
+
+bool risk_on = (g_locs > infla or g_locs > defla or refla > infla or refla > defla)
+
+// Correlation & Implied Value
+float cor_SPHD = ta.correlation(close, fc_SPHD, cor_len)
+float cor_SPLV = ta.correlation(close, fc_SPLV, cor_len)
+float cor_QUAL = ta.correlation(close, fc_QUAL, cor_len)
+float cor_DEF  = ta.correlation(close, fc_DEF,  cor_len)
+float cor_IWF  = ta.correlation(close, fc_IWF,  cor_len)
+float cor_SPHB = ta.correlation(close, fc_SPHB, cor_len)
+float cor_IYT  = ta.correlation(close, fc_IYT,  cor_len)
+float cor_IWN  = ta.correlation(close, fc_IWN,  cor_len)
+float cor_IWD  = ta.correlation(close, fc_IWD,  cor_len)
+float cor_IWM  = ta.correlation(close, fc_IWM,  cor_len)
+float cor_IWR  = ta.correlation(close, fc_IWR,  cor_len)
+float cor_MGK  = ta.correlation(close, fc_MGK,  cor_len)
+float cor_OEF  = ta.correlation(close, fc_OEF,  cor_len)
+float cor_MTUM = ta.correlation(close, fc_MTUM, cor_len)
+float cor_IWB  = ta.correlation(close, fc_IWB,  cor_len)
+
+float ImplCorrAvg = math.avg(
+     cor_SPHD * f_kama(fc_SPHD), cor_SPLV * f_kama(fc_SPLV), cor_QUAL * f_kama(fc_QUAL),
+     cor_DEF  * f_kama(fc_DEF),  cor_IWF  * f_kama(fc_IWF),  cor_SPHB * f_kama(fc_SPHB),
+     cor_IYT  * f_kama(fc_IYT),  cor_IWN  * f_kama(fc_IWN),  cor_IWD  * f_kama(fc_IWD),
+     cor_IWM  * f_kama(fc_IWM),  cor_IWR  * f_kama(fc_IWR),  cor_MGK  * f_kama(fc_MGK),
+     cor_OEF  * f_kama(fc_OEF),  cor_MTUM * f_kama(fc_MTUM), cor_IWB  * f_kama(fc_IWB))
+
+// Plots & Visuals
+plot(ImplCorrAvg, "Implied Correlation Avg", ImplCorrAvg > 0.1 ? color.green : ImplCorrAvg < -0.1 ? color.red : color.gray, style = plot.style_columns)
+hline(0.1, color = color.green, linewidth = 2)
+hline(0, color = color.gray)
+hline(-0.1, color = color.red, linewidth = 2)
+
+barcolor(ImplCorrAvg > 0.1 ? color.green : ImplCorrAvg < -0.1 ? color.red : color.gray)
+bgcolor(risk_on ? color.new(color.green, 90) : color.new(color.red, 90))
+
+// Alerts
+bool first_green = ImplCorrAvg > cor_thr and nz(ImplCorrAvg[1]) <= cor_thr
+alertcondition(first_green, "First Green Bar", "Implied correlation turned positive")
