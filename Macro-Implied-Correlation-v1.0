@@ -2,14 +2,21 @@
 indicator("Macro Implied Correlation v1.0", overlay=false)
 
 // Settings
-fixedTF    = input.timeframe("240", "Indicator Timeframe", options=["60", "240", "D", "W"])
-cor_len    = input.int(14, "Correlation Length")
-cor_kFast  = input.int(7, "KAMA Fast Period")
-cor_kSlow  = input.int(19, "KAMA Slow Period")
-cor_kER    = input.int(8, "KAMA Efficiency Ratio Period")
-cor_kNorm  = input.int(10, "KAMA Normalization Lookback")
-cor_thr    = input.float(0.0, "Green Threshold")
-reg_rocLen = input.int(14, "ROC Period for Regime")
+grp_set    = "Indicator Settings"
+fixedTF    = input.timeframe("D", "Indicator Timeframe", options=["60", "240", "D", "W"], group=grp_set)
+cor_len    = input.int(14, "Correlation Length", group=grp_set)
+cor_kFast  = input.int(7, "KAMA Fast Period", group=grp_set)
+cor_kSlow  = input.int(19, "KAMA Slow Period", group=grp_set)
+cor_kER    = input.int(8, "KAMA Efficiency Ratio Period", group=grp_set)
+cor_kNorm  = input.int(10, "KAMA Normalization Lookback", group=grp_set)
+cor_thr    = input.float(0.0, "Green Threshold", group=grp_set)
+reg_rocLen = input.int(14, "ROC Period for Regime", group=grp_set)
+
+grp_vis    = "Visuals & Colors"
+show_barcol= input.bool(true, "Color Chart Candles", group=grp_vis)
+col_up     = input.color(#0F6E56, "Bullish Color", group=grp_vis)
+col_dn     = input.color(#A32D2D, "Bearish Color", group=grp_vis)
+col_nt     = input.color(color.gray, "Neutral Color", group=grp_vis)
 
 // Full 15 CE Factor ETFs
 f_kama(asset) =>
@@ -108,13 +115,15 @@ float ImplCorrAvg = math.avg(
      cor_OEF  * f_kama(fc_OEF),  cor_MTUM * f_kama(fc_MTUM), cor_IWB  * f_kama(fc_IWB))
 
 // Plots & Visuals
-plot(ImplCorrAvg, "Implied Correlation Avg", ImplCorrAvg > 0.1 ? color.green : ImplCorrAvg < -0.1 ? color.red : color.gray, style = plot.style_columns)
-hline(0.1, color = color.green, linewidth = 2)
-hline(0, color = color.gray)
-hline(-0.1, color = color.red, linewidth = 2)
+color hist_col = ImplCorrAvg > 0.1 ? col_up : ImplCorrAvg < -0.1 ? col_dn : col_nt
 
-barcolor(ImplCorrAvg > 0.1 ? color.green : ImplCorrAvg < -0.1 ? color.red : color.gray)
-bgcolor(risk_on ? color.new(color.green, 90) : color.new(color.red, 90))
+plot(ImplCorrAvg, "Implied Correlation Avg", hist_col, style = plot.style_columns)
+hline(0.1, color = col_up, linewidth = 2)
+hline(0, color = col_nt)
+hline(-0.1, color = col_dn, linewidth = 2)
+
+barcolor(show_barcol ? hist_col : na)
+bgcolor(risk_on ? color.new(col_up, 90) : color.new(col_dn, 90))
 
 // Alerts
 bool first_green = ImplCorrAvg > cor_thr and nz(ImplCorrAvg[1]) <= cor_thr
