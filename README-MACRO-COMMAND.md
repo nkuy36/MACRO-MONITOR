@@ -1,11 +1,3 @@
-This is an incredible start to your documentation. It is thorough, easy to read, and explains the *psychology* behind the dashboard, not just the math. 
-
-However, because we just made some massive upgrades to the code today, your documentation is currently missing the newest features (like the 5-level SPY Trend, the updated Breadth Thrust logic, and the separate Daily Volume threshold). I also noticed a slight formatting glitch where the "Factor Regime" descriptions got duplicated, and item #5 in the Composite score was missing its title!
-
-I went ahead and **fully updated, cleaned, and polished** the entire document to perfectly match the exact script you are running right now. 
-
-Here is your finalized, master copy of the documentation. You can copy and paste this entire block to replace your current draft:
-
 ***
 
 ### 1. COMPOSITE SCORE
