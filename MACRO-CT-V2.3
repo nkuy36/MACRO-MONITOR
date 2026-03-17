@@ -28,9 +28,9 @@ grp_idx = "3. Index Trend"
 idx_sym     = input.symbol("SPY", "Market Index Ticker", group=grp_idx)
 idx_smaLen  = input.int(200, "SMA Length for Bull/Bear", group=grp_idx)
 idx_chopPer = input.int(14, "Chop Index Period", group=grp_idx)
-idx_chopC   = input.float(61.8, "Chop: Chaos Threshold", group=grp_idx)
-idx_chopT   = input.float(50.0, "Chop: Transition Threshold", group=grp_idx)
-idx_chopTr  = input.float(38.2, "Chop: Trending Threshold", group=grp_idx)
+idx_chopC   = input.float(61.8, "Chop: Chaos Threshold", group=grp_idx, step=0.1)
+idx_chopT   = input.float(50.0, "Chop: Transition Threshold", group=grp_idx, step=0.1)
+idx_chopTr  = input.float(38.2, "Chop: Trending Threshold", group=grp_idx, step=0.1)
 htf_tf      = input.timeframe("1W", "HTF Confirmation Timeframe", group=grp_idx)
 htf_emaLen  = input.int(20, "HTF EMA Length", group=grp_idx)
 
@@ -41,8 +41,8 @@ brd_vLen    = input.int(12, "Velocity Length (ROC period)", group=grp_brd)
 brd_aLen    = input.int(3, "Base Acceleration Length", group=grp_brd)
 brd_volW    = input.bool(true, "Include Volume Weight in Score", group=grp_brd)
 brd_volAvg  = input.int(20, "Volume Average Period (days)", group=grp_brd)
-brd_volThr   = input.float(1.3, "Volume Spike Threshold - Weekly (x avg)", group=grp_brd)
-brd_volThr_D = input.float(1.1, "Volume Spike Threshold - Daily (x avg)", group=grp_brd)
+brd_volThr   = input.float(1.3, "Volume Spike Threshold - Weekly (x avg)", group=grp_brd, step=0.1)
+brd_volThr_D = input.float(1.1, "Volume Spike Threshold - Daily (x avg)", group=grp_brd, step=0.1)
 
 grp_reg = "5. Factor Regime"
 reg_rocLen  = input.int(14, "ROC Period for Regime", group=grp_reg)
