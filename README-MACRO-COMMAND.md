@@ -92,10 +92,10 @@ Breadth measures *participation*. A healthy market requires the vast majority of
 **Metrics & Brackets:**
 
 * **Phase Counts:** Shows exactly where all 27 sectors are in their lifecycle. (Always 🔵 Blue).
-* **R (Ripping):** Velocity UP, Acceleration UP. (Strongest phase).
-* **T (Turn):** Velocity DOWN, Acceleration UP. (Bottoming out/reversing higher).
+* **Rp (Ripping):** Velocity UP, Acceleration UP. (Strongest phase).
+* **Tu (Turn):** Velocity DOWN, Acceleration UP. (Bottoming out/reversing higher).
 * **Tp (Topping):** Velocity UP, Acceleration DOWN. (Losing steam).
-* **C (Crash):** Velocity DOWN, Acceleration DOWN. (Actively selling off).
+* **Cr (Crash):** Velocity DOWN, Acceleration DOWN. (Actively selling off).
 
 
 * **Breadth Score:** A mathematically smoothed 0 to 100 score based on the phases above.
