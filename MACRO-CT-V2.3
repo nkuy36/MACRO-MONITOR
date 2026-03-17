@@ -385,17 +385,15 @@ else if composite_score >= 20
 // ==============================================================================
 // 10. RECOVERED METRICS & DELTAS
 // ==============================================================================
-// Breadth Thrust: Market surges from weak (< 40) to strong (> 60) in 3 days
-bool thrust_active = ta.crossover(brd_score, 60) and nz(brd_score[3]) < 40
-int bars_since_thrust = nz(ta.barssince(thrust_active))
+// Breadth Thrust: Fast Breadth surges from < 30% to > 60% in 3 days
+bool breadth_thrust = fast_breadth > 0.60 and nz(fast_breadth[3]) < 0.30
+int bars_since_thrust = nz(ta.barssince(breadth_thrust))
 
-// Liquidity: 10-Year Treasury Yield (Falling yields = OK/Green)
-float tnx_val = request.security("US10Y", "D", close)
-bool liq_ok = tnx_val < ta.ema(tnx_val, 21)
+// Correlation First Green: Crosses user-defined threshold
+bool first_green = ImplCorrAvg > cor_thr and nz(ImplCorrAvg[1]) <= cor_thr
+int bars_since_green = nz(ta.barssince(first_green))
 
-// Correlation First Green: Correlation crosses above +0.10
-bool corr_first = ta.crossover(ImplCorrAvg, 0.1)
-int bars_since_green = nz(ta.barssince(corr_first))
+// --- DELTAS & REGIME PCTS ---
 
 // --- DELTAS & REGIME PCTS ---
 float comp_delta = composite_score - nz(composite_score[1])
@@ -503,9 +501,9 @@ if barstate.islast
         string p_txt = "Rp: " + str.tostring(math.round(rip_c)) + " | Tu: " + str.tostring(math.round(trn_c)) + " | Tp: " + str.tostring(math.round(top_c)) + " | Cr: " + str.tostring(math.round(crs_c))
         f_write(row, "Phase Counts", p_txt, bg_N)
         row += 1
-        f_write(row, "Breadth Thrust", thrust_active ? "YES" : "NO (" + str.tostring(bars_since_thrust) + " ago)", thrust_active ? bg_G : bg_N)
+        f_write(row, "Breadth Thrust", breadth_thrust ? "YES" : "NO (" + str.tostring(bars_since_thrust) + " ago)", breadth_thrust ? bg_G : bg_N)
         row += 1
-        f_write(row, "Liquidity (TNX)", liq_ok ? "OK" : "TIGHT", liq_ok ? bg_G : bg_R)
+        f_write(row, "Liquidity (TNX)", liquidity_stress ? "TIGHT" : "OK", liquidity_stress ? bg_R : bg_G)
         row += 1
 
     // --- 4. FACTOR REGIME ---
@@ -530,7 +528,7 @@ if barstate.islast
             row += 1
         f_write(row, "ImplCorr Avg", corr_str, ImplCorrAvg > 0.1 ? bg_G : ImplCorrAvg < -0.1 ? bg_R : bg_N)
         row += 1
-        f_write(row, "First Green", corr_first ? "YES" : str.tostring(bars_since_green) + " ago", corr_first ? bg_G : bg_N)
+        f_write(row, "First Green", first_green ? "YES" : str.tostring(bars_since_green) + " ago", first_green ? bg_G : bg_N)
         row += 1
 
     if show_mmfi
@@ -592,15 +590,15 @@ if barstate.islast
 // ==============================================================================
 // 12. ALERTS & PLOTS 
 // ==============================================================================
-alertcondition(thrust_active, "Breadth Thrust!", "Breadth thrust detected on Macro Command Center")
+alertcondition(breadth_thrust, "Breadth Thrust!", "Breadth thrust detected on Macro Command Center")
 alertcondition(action_code != nz(action_code[1]), "Action Zone Changed", "Macro action zone changed")
-alertcondition(corr_first, "ImplCorr First Green", "Implied correlation turned positive — first green bar")
+alertcondition(first_green, "ImplCorr First Green", "Implied correlation turned positive — first green bar")
 
 // Data Window Outputs Only (no visual plots on chart)
 plot(composite_score, "Macro Score", display=display.data_window)
 plot(action_code, "Action Code", display=display.data_window)
 plot(risk_on ? 1 : 0, "Risk", display=display.data_window)
-plot(corr_first ? 1 : 0, "ImplCorr Green", display=display.data_window)
+plot(first_green ? 1 : 0, "ImplCorr Green", display=display.data_window)
 plot(vix_zone_code, "VIX Zone", display=display.data_window)
 plot(brd_score, "Breadth", display=display.data_window)
 plot(ImplCorrAvg, "ImplCorr Avg", display=display.data_window)
