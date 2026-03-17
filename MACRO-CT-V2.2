@@ -98,20 +98,44 @@ f_chopIndex() =>
     _range := _range == 0 ? 1 : _range
     100 * math.log10(_atrSum / _range) / math.log10(idx_chopPer)
 
-[spy_close, spy_sma200, spy_chop] = request.security(idx_sym, "D", [close, ta.sma(close, idx_smaLen), f_chopIndex()])
+[spy_close, spy_sma200, spy_chop, spy_ema21, spy_sma50, spy_sma150] = request.security(idx_sym, "D", [close, ta.sma(close, idx_smaLen), f_chopIndex(), ta.ema(close, 21), ta.sma(close, 50), ta.sma(close, 150)])
 [htf_close, htf_ema] = request.security(syminfo.tickerid, htf_tf, [close, ta.ema(close, htf_emaLen)])
 htfBullish = htf_close > htf_ema
 
-string idx_state = "SUPER TREND"
-float idx_score = 100
-if spy_close < spy_sma200
-    idx_state := "BEAR MKT", idx_score := 0
-else if spy_chop > idx_chopC
-    idx_state := "CHOP/CHAOS", idx_score := 20
+// Chop state (separate from trend — measures trending vs ranging)
+string chop_state = "SUPER TREND"
+if spy_chop > idx_chopC
+    chop_state := "CHOP/CHAOS"
 else if spy_chop > idx_chopT
-    idx_state := "TRANSITION", idx_score := 50
+    chop_state := "TRANSITION"
 else if spy_chop > idx_chopTr
-    idx_state := "TRENDING", idx_score := 75
+    chop_state := "TRENDING"
+
+// SPY Trend Context (where price sits in the MA stack)
+string spy_trend = "BEAR"
+color spy_trend_col = col_bear
+float idx_score = 0
+
+if spy_close < spy_sma200
+    spy_trend := "BEAR"
+    spy_trend_col := col_bear
+    idx_score := 0
+else if spy_close < spy_sma50
+    spy_trend := "DEEP PULLBACK"
+    spy_trend_col := col_warn
+    idx_score := 35
+else if spy_close < spy_ema21
+    spy_trend := "PULLBACK"
+    spy_trend_col := col_neut
+    idx_score := 60
+else if spy_ema21 > spy_sma50 and spy_sma50 > spy_sma150 and spy_sma150 > spy_sma200
+    spy_trend := "POWER TREND"
+    spy_trend_col := col_bull
+    idx_score := 100
+else
+    spy_trend := "UPTREND"
+    spy_trend_col := col_bull
+    idx_score := 75
 
 // ==============================================================================
 // 5. MODULE 2: SECTOR BREADTH (Druckenmiller) & LIQUIDITY
@@ -379,31 +403,6 @@ plot(vix_zone_code, "VIX Zone", display=display.data_window)
 plot(brd_score, "Breadth", display=display.data_window)
 plot(ImplCorrAvg, "ImplCorr Avg", display=display.data_window)
 
-// --- DELTAS & REGIME PCTS ---
-float comp_delta = composite_score - nz(composite_score[1])
-string comp_str = str.tostring(composite_score, "#.1") + (comp_delta >= 0 ? " (+" : " (") + str.tostring(comp_delta, "#.1") + ")"
-
-float brd_delta = brd_score - nz(brd_score[1])
-string brd_str = str.tostring(brd_score, "#.1") + (brd_delta >= 0 ? " (+" : " (") + str.tostring(brd_delta, "#.1") + ")"
-
-float corr_delta = ImplCorrAvg - nz(ImplCorrAvg[1])
-string corr_str = str.tostring(ImplCorrAvg, "#.2") + (corr_delta >= 0 ? " (+" : " (") + str.tostring(corr_delta, "#.2") + ")"
-
-float mmfi_delta = mmfi_c - nz(mmfi_c[1])
-string mmfi_str = str.tostring(mmfi_c, "#.1") + (mmfi_delta >= 0 ? " (+" : " (") + str.tostring(mmfi_delta, "#.1") + ")"
-
-float vix_delta = vix_c - nz(vix_c[1])
-string vix_str = str.tostring(vix_c, "#.2") + (vix_delta >= 0 ? " (+" : " (") + str.tostring(vix_delta, "#.2") + ")"
-
-int hot_d_prev = nz(hot_total_D[1])
-string hot_d_str = str.tostring(hot_total_D) + " / 11 (was " + str.tostring(hot_d_prev) + ")"
-
-float g_pct = (g_locs / total_reg) * 100
-float r_pct = (refla / total_reg) * 100
-float i_pct = (infla / total_reg) * 100
-float d_pct = (defla / total_reg) * 100
-string reg_pct_str = "G:" + str.tostring(g_pct, "#") + " R:" + str.tostring(r_pct, "#") + " I:" + str.tostring(i_pct, "#") + " D:" + str.tostring(d_pct, "#")
-
 // ==============================================================================
 // 11. DASHBOARD TABLE
 // ==============================================================================
@@ -443,6 +442,31 @@ f_write(int v_row, string lbl, string val, color bg_col) =>
         table.cell(dash, current_h_col, 1, val, text_color=color.white, bgcolor=bg_col, text_size=size_str, text_halign=text.align_center)
         array.set(h_col_ptr, 0, current_h_col + 1)
 
+// --- DELTAS & REGIME PCTS ---
+float comp_delta = composite_score - nz(composite_score[1])
+string comp_str = str.tostring(composite_score, "#.1") + (comp_delta >= 0 ? " (+" : " (") + str.tostring(comp_delta, "#.1") + ")"
+
+float brd_delta = brd_score - nz(brd_score[1])
+string brd_str = str.tostring(brd_score, "#.1") + (brd_delta >= 0 ? " (+" : " (") + str.tostring(brd_delta, "#.1") + ")"
+
+float corr_delta = ImplCorrAvg - nz(ImplCorrAvg[1])
+string corr_str = str.tostring(ImplCorrAvg, "#.2") + (corr_delta >= 0 ? " (+" : " (") + str.tostring(corr_delta, "#.2") + ")"
+
+float mmfi_delta = mmfi_c - nz(mmfi_c[1])
+string mmfi_str = str.tostring(mmfi_c, "#.1") + (mmfi_delta >= 0 ? " (+" : " (") + str.tostring(mmfi_delta, "#.1") + ")"
+
+float vix_delta = vix_c - nz(vix_c[1])
+string vix_str = str.tostring(vix_c, "#.2") + (vix_delta >= 0 ? " (+" : " (") + str.tostring(vix_delta, "#.2") + ")"
+
+int hot_d_prev = nz(hot_total_D[1])
+string hot_d_str = str.tostring(hot_total_D) + " / 11 (was " + str.tostring(hot_d_prev) + ")"
+
+float g_pct = (g_locs / total_reg) * 100
+float r_pct = (refla / total_reg) * 100
+float i_pct = (infla / total_reg) * 100
+float d_pct = (defla / total_reg) * 100
+string reg_pct_str = "G:" + str.tostring(g_pct, "#") + " R:" + str.tostring(r_pct, "#") + " I:" + str.tostring(i_pct, "#") + " D:" + str.tostring(d_pct, "#")
+
 if barstate.islast
     array.set(h_col_ptr, 0, 0)
     int row = 0
@@ -466,9 +490,9 @@ if barstate.islast
             table.merge_cells(dash, 0, row, 1, row)
             table.cell(dash, 0, row, "INDEX TREND", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
-        f_write(row, "SPY Trend", spy_close > spy_sma200 ? "ABOVE 200" : "BELOW 200", spy_close > spy_sma200 ? bg_G : bg_R)
+        f_write(row, "SPY Trend", spy_trend, color.new(spy_trend_col, dash_transp))
         row += 1
-        f_write(row, "Chop Index", idx_state + " (" + str.tostring(spy_chop, "#.1") + ")", spy_chop < idx_chopTr ? bg_G : bg_A)
+        f_write(row, "Chop Index", chop_state + " (" + str.tostring(spy_chop, "#.1") + ")", spy_chop < idx_chopTr ? bg_G : bg_A)
         row += 1
         f_write(row, "HTF Weekly", htfBullish ? "BULLISH" : "BEARISH", htfBullish ? bg_G : bg_R)
         row += 1
@@ -478,7 +502,11 @@ if barstate.islast
             table.merge_cells(dash, 0, row, 1, row)
             table.cell(dash, 0, row, "SECTOR BREADTH", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
-        f_write(row, "Breadth Score", brd_str, brd_score > 60 ? bg_G : brd_score < 40 ? bg_R : bg_A)
+        string reg_txt = g_locs > infla and g_locs > defla ? "GOLDILOCKS" : refla > infla and refla > defla ? "REFLATION" : infla > defla ? "INFLATION" : "DEFLATION"
+        f_write(row, "Leading Regime", reg_txt, risk_on ? bg_G : bg_R)
+        row += 1
+        f_write(row, "Regime %", reg_pct_str, bg_N)
+        row += 1
         row += 1
         string p_txt = "Rp: " + str.tostring(math.round(rip_c)) + " | Tu: " + str.tostring(math.round(trn_c)) + " | Tp: " + str.tostring(math.round(top_c)) + " | Cr: " + str.tostring(math.round(crs_c))
         f_write(row, "Phase Counts", p_txt, bg_N)
@@ -495,7 +523,7 @@ if barstate.islast
             row += 1
         f_write(row, "Risk State", risk_on ? "RISK ON" : "RISK OFF", risk_on ? bg_G : bg_R)
         row += 1
-        f_write(row, "ImplCorr Avg", str.tostring(ImplCorrAvg, "#.2"), ImplCorrAvg > 0.1 ? bg_G : ImplCorrAvg < -0.1 ? bg_R : bg_N)
+        f_write(row, "ImplCorr Avg", corr_str, ImplCorrAvg > 0.1 ? bg_G : ImplCorrAvg < -0.1 ? bg_R : bg_N)
 
     if show_implc
         if dash_orient == "Vertical"
