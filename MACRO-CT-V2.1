@@ -350,17 +350,17 @@ else if vix_c > vix_elev
 // ==============================================================================
 float composite_score = (idx_score * 0.20) + (brd_score * 0.25) + (reg_score * 0.10) + (corr_score * 0.10) + (mmfi_score * 0.15) + (vix_score * 0.20)
 
-string action_text = "CASH / HEDGE"
+string action_text = "CASH / HEDGE | B/O FAIL"
 int action_code = 0
 color action_col = color.red
 if composite_score >= 80
-    action_text := "AGGRESSIVE", action_code := 4, action_col := #0F6E56
+    action_text := "AGGRESSIVE | B/O WORK", action_code := 4, action_col := #0F6E56
 else if composite_score >= 60
-    action_text := "FULL SIZE", action_code := 3, action_col := #1D9B52
+    action_text := "FULL SIZE | B/O WORK", action_code := 3, action_col := #1D9B52
 else if composite_score >= 40
-    action_text := "HALF SIZE", action_code := 2, action_col := #854F0B
+    action_text := "HALF SIZE | THEME B/O", action_code := 2, action_col := #854F0B
 else if composite_score >= 20
-    action_text := "TRAPS ONLY", action_code := 1, action_col := #A32D2D
+    action_text := "TRAPS ONLY | B/O FAIL", action_code := 1, action_col := #A32D2D
 
 // ==============================================================================
 // 10. ALERTS & PLOTS
