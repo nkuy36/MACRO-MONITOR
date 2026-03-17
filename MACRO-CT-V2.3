@@ -5,47 +5,47 @@ indicator("MACRO COMMAND CENTER v2.3", overlay=true, max_labels_count=500)
 // 1. GLOBAL SETTINGS & TOGGLES
 // ==============================================================================
 grp_global = "1. Global Settings"
-fixedTF     = input.timeframe("240", "Indicator Timeframe", options=["240", "D", "W"], group=grp_global)
-dash_y      = input.string("top", "Table Position", options=["top", "middle", "bottom"], group=grp_global, inline="pos")
-dash_x      = input.string("right", "",               options=["left", "center", "right"], group=grp_global, inline="pos")
-dash_orient = input.string("Vertical", "Table Orientation", options=["Vertical", "Horizontal"], group=grp_global)
+fixedTF     = input.timeframe("240", "Indicator Timeframe", options=["240", "D", "W"], group=grp_global, tooltip="The core timeframe for the script's math. '240' (4-Hour) or 'D' (Daily) is recommended.")
+dash_y      = input.string("top", "Table Position Y", options=["top", "middle", "bottom"], group=grp_global, inline="pos")
+dash_x      = input.string("right", "Table Position X", options=["left", "center", "right"], group=grp_global, inline="pos")
+dash_orient = input.string("Vertical", "Table Orientation", options=["Vertical", "Horizontal"], group=grp_global, tooltip="Choose Vertical for a side panel, or Horizontal for a top/bottom banner.")
 dash_size   = input.string("Tiny", "Text Size", options=["Tiny", "Small", "Normal", "Large"], group=grp_global)
 
 grp_toggles = "2. Module Toggles"
-show_comp   = input.bool(true, "Show Composite Score", group=grp_toggles)
-show_index  = input.bool(true, "Show Index Trend", group=grp_toggles)
-show_brdth  = input.bool(true, "Show Sector Breadth", group=grp_toggles)
-show_regime = input.bool(true, "Show Factor Regime", group=grp_toggles)
-show_implc  = input.bool(true, "Show Implied Correlation", group=grp_toggles)
-show_mmfi   = input.bool(true, "Show MMFI", group=grp_toggles)
-show_vix    = input.bool(true, "Show VIX", group=grp_toggles)
-show_vol    = input.bool(true, "Show Volume Rotation", group=grp_toggles)
+show_comp   = input.bool(true, "Show Composite Score", group=grp_toggles, tooltip="The master 0-100 score and Action Zone.")
+show_index  = input.bool(true, "Show Index Trend", group=grp_toggles, tooltip="SPY Trend and Chop Index.")
+show_brdth  = input.bool(true, "Show Sector Breadth", group=grp_toggles, tooltip="Sectors ETFs participation phases.")
+show_regime = input.bool(true, "Show Factor Regime", group=grp_toggles, tooltip="Macro season (Goldilocks, Reflation, etc.).")
+show_implc  = input.bool(true, "Show Implied Correlation", group=grp_toggles, tooltip="Factor alignment synchronization.")
+show_mmfi   = input.bool(true, "Show MMFI", group=grp_toggles, tooltip="Market Momentum Filter Index (% stocks > 50 SMA).")
+show_vix    = input.bool(true, "Show VIX", group=grp_toggles, tooltip="Volatility and Hedge signals.")
+show_vol    = input.bool(true, "Show Volume Rotation", group=grp_toggles, tooltip="Institutional money flow and volume spikes.")
 
 // ==============================================================================
 // 2. MODULE-SPECIFIC SETTINGS
 // ==============================================================================
 grp_idx = "3. Index Trend"
 idx_sym     = input.symbol("SPY", "Market Index Ticker", group=grp_idx)
-idx_smaLen  = input.int(200, "SMA Length for Bull/Bear", group=grp_idx)
+idx_smaLen  = input.int(200, "SMA Length for Bull/Bear", group=grp_idx, tooltip="The primary moving average used to determine macro Bull or Bear regimes.")
 idx_chopPer = input.int(14, "Chop Index Period", group=grp_idx)
-idx_chopC   = input.float(61.8, "Chop: Chaos Threshold", group=grp_idx, step=0.1)
-idx_chopT   = input.float(50.0, "Chop: Transition Threshold", group=grp_idx, step=0.1)
-idx_chopTr  = input.float(38.2, "Chop: Trending Threshold", group=grp_idx, step=0.1)
+idx_chopC   = input.float(61.8, "Chop: Chaos Threshold", group=grp_idx, step=0.1, tooltip="Above this value, the market is completely untradable (Red).")
+idx_chopT   = input.float(50.0, "Chop: Transition Threshold", group=grp_idx, step=0.1, tooltip="Between this and Trending, the market is choppy/transitioning (Orange).")
+idx_chopTr  = input.float(38.2, "Chop: Trending Threshold", group=grp_idx, step=0.1, tooltip="Below this value, the market is in a clean, tradable trend (Green).")
 htf_tf      = input.timeframe("1W", "HTF Confirmation Timeframe", group=grp_idx)
-htf_emaLen  = input.int(20, "HTF EMA Length", group=grp_idx)
+htf_emaLen  = input.int(20, "HTF EMA Length", group=grp_idx, tooltip="The moving average used for the Higher Timeframe (HTF) Weekly check.")
 
 grp_brd = "4. Sector Breadth"
-brd_tf      = input.timeframe("W", "Breadth Macro Timeframe", group=grp_brd)
-vol_tf_D    = input.timeframe("D", "Secondary Volume Timeframe (Daily)", group=grp_brd)
+brd_tf      = input.timeframe("W", "Breadth Macro Timeframe", group=grp_brd, tooltip="The timeframe used to calculate the broader Breadth phases (Rp, Tu, Tp, Cr).")
+vol_tf_D    = input.timeframe("D", "Secondary Volume Timeframe (Daily)", group=grp_brd, tooltip="The timeframe used for daily volume spike detection.")
 brd_vLen    = input.int(12, "Velocity Length (ROC period)", group=grp_brd)
 brd_aLen    = input.int(3, "Base Acceleration Length", group=grp_brd)
-brd_volW    = input.bool(true, "Include Volume Weight in Score", group=grp_brd)
+brd_volW    = input.bool(true, "Include Volume Weight in Score", group=grp_brd, tooltip="If true, sectors with massive volume spikes are weighted more heavily in the Breadth Score.")
 brd_volAvg  = input.int(20, "Volume Average Period (days)", group=grp_brd)
-brd_volThr   = input.float(1.3, "Volume Spike Threshold - Weekly (x avg)", group=grp_brd, step=0.1)
-brd_volThr_D = input.float(1.1, "Volume Spike Threshold - Daily (x avg)", group=grp_brd, step=0.1)
+brd_volThr   = input.float(1.3, "Volume Spike Threshold - Weekly (x avg)", group=grp_brd, step=0.1, tooltip="1.3 = 130% of average volume. Triggers the weekly institutional accumulation tracker.")
+brd_volThr_D = input.float(1.1, "Volume Spike Threshold - Daily (x avg)", group=grp_brd, step=0.1, tooltip="1.1 = 110% of average volume. Triggers the daily SPDR tracker.")
 
 grp_reg = "5. Factor Regime"
-reg_rocLen  = input.int(14, "ROC Period for Regime", group=grp_reg)
+reg_rocLen  = input.int(14, "ROC Period for Regime", group=grp_reg, tooltip="Lookback period to measure Factor momentum against each other.")
 
 grp_corr = "6. Implied Correlation"
 cor_tf      = input.timeframe("240", "Implied Corr Timeframe", group=grp_corr)
@@ -54,19 +54,19 @@ cor_kFast   = input.int(7, "KAMA Fast Period", group=grp_corr)
 cor_kSlow   = input.int(19, "KAMA Slow Period", group=grp_corr)
 cor_kER     = input.int(8, "KAMA Efficiency Ratio Period", group=grp_corr)
 cor_kNorm   = input.int(10, "KAMA Normalization Lookback", group=grp_corr)
-cor_thr     = input.float(0.0, "ImplCorr Green Threshold", group=grp_corr)
+cor_thr     = input.float(0.0, "ImplCorr Green Threshold", group=grp_corr, step=0.1, tooltip="The correlation value required to trigger a 'First Green' alignment signal.")
 
 grp_mmfi = "7. MMFI"
 mmf_sLen    = input.int(10, "MMFI Short MA", group=grp_mmfi)
 mmf_lLen    = input.int(50, "MMFI Long MA", group=grp_mmfi)
 
 grp_vix = "8. VIX"
-vix_sLen    = input.int(10, "VIX Short MA", group=grp_vix)
+vix_sLen    = input.int(10, "VIX Short MA", group=grp_vix, tooltip="Used to determine if Volatility is expanding (price above MA) or contracting (price below MA).")
 vix_bbLen   = input.int(20, "VIX Bollinger Length", group=grp_vix)
-vix_bbStd   = input.float(2.0, "VIX Bollinger StdDev", group=grp_vix)
-vix_elev    = input.float(20.0, "VIX Elevated Threshold", group=grp_vix)
-vix_fear    = input.float(30.0, "VIX Fear Threshold", group=grp_vix)
-vix_extr    = input.float(40.0, "VIX Extreme Threshold", group=grp_vix)
+vix_bbStd   = input.float(2.0, "VIX Bollinger StdDev", group=grp_vix, step=0.1)
+vix_elev    = input.float(20.0, "VIX Elevated Threshold", group=grp_vix, step=1.0)
+vix_fear    = input.float(30.0, "VIX Fear Threshold", group=grp_vix, step=1.0)
+vix_extr    = input.float(40.0, "VIX Extreme Threshold", group=grp_vix, step=1.0, tooltip="Contrarian panic zone. Historically signals market bottoms.")
 
 grp_colors = "9. Dashboard Colors"
 dash_bg_col = input.color(color.black, "Dashboard Background", group=grp_colors)
@@ -138,7 +138,7 @@ else
     idx_score := 75
 
 // ==============================================================================
-// 5. MODULE 2: SECTOR BREADTH (Druckenmiller) & LIQUIDITY
+// 5. MODULE 2: SECTOR BREADTH & LIQUIDITY
 // ==============================================================================
 float tnx_change = request.security("TNX", timeframe.period, ta.change(close), ignore_invalid_symbol=true)
 bool liquidity_stress = nz(tnx_change) > 0
