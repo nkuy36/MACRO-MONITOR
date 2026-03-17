@@ -536,11 +536,15 @@ if barstate.islast
             table.merge_cells(dash, 0, row, 1, row)
             table.cell(dash, 0, row, "MMFI", text_color=col_head_txt, bgcolor=color.new(col_head_bg, dash_transp), text_size=size_str)
             row += 1
-        f_write(row, "MMFI Zone", mmfi_zone, mmfi_zone == "CAPITULATION" or mmfi_zone == "HEALTHY" ? bg_G : bg_A)
+            
+        color mmfi_val_col = mmfi_c < 20 ? bg_G : mmfi_c < 40 ? bg_R : mmfi_c < 60 ? bg_A : mmfi_c <= 75 ? bg_G : bg_R
+        f_write(row, "MMFI Value", mmfi_str, mmfi_val_col)
         row += 1
+        
         color mmfi_zone_col = mmfi_zone == "CAPITULATION" or mmfi_zone == "HEALTHY" ? bg_G : mmfi_zone == "OVERHEATED" or mmfi_zone == "BEARISH" ? bg_R : bg_A
         f_write(row, "MMFI Zone", mmfi_zone, mmfi_zone_col)
         row += 1
+        
         string mmfi_ma_ctx = mmfi_c > mmfi_s10 and mmfi_c > mmfi_s50 ? " (>MAs)" : mmfi_c > mmfi_s10 ? " (>10)" : mmfi_c < mmfi_s10 and mmfi_c < mmfi_s50 ? " (<MAs)" : ""
         f_write(row, "MMFI Trend", (mmfi_rising ? "RISING" : "FALLING") + mmfi_ma_ctx, mmfi_rising ? bg_G : bg_R)
         row += 1
