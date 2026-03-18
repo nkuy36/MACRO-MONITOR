@@ -5,6 +5,7 @@ indicator("Macro Implied Correlation v1.0", overlay=false)
 grp_set    = "Indicator Settings"
 fixedTF    = input.timeframe("D", "Indicator Timeframe", options=["60", "240", "D", "W"], group=grp_set)
 cor_len    = input.int(14, "Correlation Length", group=grp_set)
+cor_bm     = input.symbol("", "Benchmark Ticker (Blank = Main Chart)", group=grp_set, tooltip="The master ticker all factors are correlated against. Leave blank to automatically use the chart you are currently viewing.")
 cor_kFast  = input.int(7, "KAMA Fast Period", group=grp_set)
 cor_kSlow  = input.int(19, "KAMA Slow Period", group=grp_set)
 cor_kER    = input.int(8, "KAMA Efficiency Ratio Period", group=grp_set)
@@ -18,6 +19,14 @@ col_up     = input.color(#0F6E56, "Bullish Color", group=grp_vis)
 col_dn     = input.color(#A32D2D, "Bearish Color", group=grp_vis)
 col_nt     = input.color(color.gray, "Neutral Color", group=grp_vis)
 
+// Determine the active benchmark symbol
+string active_bm = cor_bm == "" ? syminfo.tickerid : cor_bm
+
+// Fetch the Benchmark Price (NEW)
+// This ensures that even if you are on an AAPL chart, 
+// if you typed SPY in the box, the math uses SPY prices.
+float bm_close = request.security(active_bm, fixedTF, close)
+
 // Full 15 CE Factor ETFs
 f_kama(asset) =>
     change = math.abs(asset - nz(asset[cor_kER]))
@@ -29,6 +38,8 @@ f_kama(asset) =>
     highest = ta.highest(kama_val, cor_kNorm)
     normalized = highest == lowest ? 0 : (kama_val - lowest) / (highest - lowest) - 0.5
     normalized > 0 ? 1 : -1
+
+float chart_close_fixed = request.security(syminfo.tickerid, fixedTF, close)
 
 float fc_SPHD = request.security("SPHD", fixedTF, close, ignore_invalid_symbol=true)
 float fc_SPLV = request.security("SPLV", fixedTF, close, ignore_invalid_symbol=true)
@@ -90,29 +101,45 @@ float defla  = (r_SPLV>0?1:0) + (r_DEF>0?1:0) + (r_MGK>0?1:0) + (r_SPHD>0?1:0) +
 
 bool risk_on = (g_locs > infla or g_locs > defla or refla > infla or refla > defla)
 
-// Correlation & Implied Value
-float cor_SPHD = ta.correlation(close, fc_SPHD, cor_len)
-float cor_SPLV = ta.correlation(close, fc_SPLV, cor_len)
-float cor_QUAL = ta.correlation(close, fc_QUAL, cor_len)
-float cor_DEF  = ta.correlation(close, fc_DEF,  cor_len)
-float cor_IWF  = ta.correlation(close, fc_IWF,  cor_len)
-float cor_SPHB = ta.correlation(close, fc_SPHB, cor_len)
-float cor_IYT  = ta.correlation(close, fc_IYT,  cor_len)
-float cor_IWN  = ta.correlation(close, fc_IWN,  cor_len)
-float cor_IWD  = ta.correlation(close, fc_IWD,  cor_len)
-float cor_IWM  = ta.correlation(close, fc_IWM,  cor_len)
-float cor_IWR  = ta.correlation(close, fc_IWR,  cor_len)
-float cor_MGK  = ta.correlation(close, fc_MGK,  cor_len)
-float cor_OEF  = ta.correlation(close, fc_OEF,  cor_len)
-float cor_MTUM = ta.correlation(close, fc_MTUM, cor_len)
-float cor_IWB  = ta.correlation(close, fc_IWB,  cor_len)
+// Correlation & Implied Value (UPDATED to use bm_close)
+float cor_SPHD = ta.correlation(bm_close, fc_SPHD, cor_len)
+float cor_SPLV = ta.correlation(bm_close, fc_SPLV, cor_len)
+float cor_QUAL = ta.correlation(bm_close, fc_QUAL, cor_len)
+float cor_DEF  = ta.correlation(bm_close, fc_DEF,  cor_len)
+float cor_IWF  = ta.correlation(bm_close, fc_IWF,  cor_len)
+float cor_SPHB = ta.correlation(bm_close, fc_SPHB, cor_len)
+float cor_IYT  = ta.correlation(bm_close, fc_IYT,  cor_len)
+float cor_IWN  = ta.correlation(bm_close, fc_IWN,  cor_len)
+float cor_IWD  = ta.correlation(bm_close, fc_IWD,  cor_len)
+float cor_IWM  = ta.correlation(bm_close, fc_IWM,  cor_len)
+float cor_IWR  = ta.correlation(bm_close, fc_IWR,  cor_len)
+float cor_MGK  = ta.correlation(bm_close, fc_MGK,  cor_len)
+float cor_OEF  = ta.correlation(bm_close, fc_OEF,  cor_len)
+float cor_MTUM = ta.correlation(bm_close, fc_MTUM, cor_len)
+float cor_IWB  = ta.correlation(bm_close, fc_IWB,  cor_len)
+
+float k_SPHD = request.security("SPHD", fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_SPLV = request.security("SPLV", fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_QUAL = request.security("QUAL", fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_DEF  = request.security("DEF",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_IWF  = request.security("IWF",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_SPHB = request.security("SPHB", fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_IYT  = request.security("IYT",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_IWN  = request.security("IWN",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_IWD  = request.security("IWD",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_IWM  = request.security("IWM",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_IWR  = request.security("IWR",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_MGK  = request.security("MGK",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_OEF  = request.security("OEF",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_MTUM = request.security("MTUM", fixedTF, f_kama(close), ignore_invalid_symbol=true)
+float k_IWB  = request.security("IWB",  fixedTF, f_kama(close), ignore_invalid_symbol=true)
 
 float ImplCorrAvg = math.avg(
-     cor_SPHD * f_kama(fc_SPHD), cor_SPLV * f_kama(fc_SPLV), cor_QUAL * f_kama(fc_QUAL),
-     cor_DEF  * f_kama(fc_DEF),  cor_IWF  * f_kama(fc_IWF),  cor_SPHB * f_kama(fc_SPHB),
-     cor_IYT  * f_kama(fc_IYT),  cor_IWN  * f_kama(fc_IWN),  cor_IWD  * f_kama(fc_IWD),
-     cor_IWM  * f_kama(fc_IWM),  cor_IWR  * f_kama(fc_IWR),  cor_MGK  * f_kama(fc_MGK),
-     cor_OEF  * f_kama(fc_OEF),  cor_MTUM * f_kama(fc_MTUM), cor_IWB  * f_kama(fc_IWB))
+     cor_SPHD * k_SPHD, cor_SPLV * k_SPLV, cor_QUAL * k_QUAL,
+     cor_DEF  * k_DEF,  cor_IWF  * k_IWF,  cor_SPHB * k_SPHB,
+     cor_IYT  * k_IYT,  cor_IWN  * k_IWN,  cor_IWD  * k_IWD,
+     cor_IWM  * k_IWM,  cor_IWR  * k_IWR,  cor_MGK  * k_MGK,
+     cor_OEF  * k_OEF,  cor_MTUM * k_MTUM, cor_IWB  * k_IWB)
 
 // Plots & Visuals
 color hist_col = ImplCorrAvg > 0.1 ? col_up : ImplCorrAvg < -0.1 ? col_dn : col_nt
