@@ -1,171 +1,231 @@
 //@version=6
-indicator("Druckenmiller Alpha-Physics [Dual-Core]", overlay=false)
+// STATUS: FINAL CALIBRATED.
+// 1. FIX: Added TNX Buffer. Shield only triggers if Yields spike > 0.5%.
+// 2. LOGIC: "RISK ON" no longer triggers on flat days (VIX < 20).
+indicator("Druckenmiller Alpha-Physics [Final Calibrated]", overlay=false, dynamic_requests=true)
 
 // ==========================================
 // 1. INPUTS
 // ==========================================
-// Hardcoded Weekly Macro timeframe for stability
 tf_macro       = input.timeframe("W", "Macro Timeframe (Weekly)")
-vel_len        = input.int(12, "Velocity Length", group="Physics")
-acc_len_base   = input.int(3, "Base Acceleration Length", group="Physics")
-vol_threshold  = input.float(2.0, "Vol Shield (VIX)", group="Risk")
-show_top_n     = input.int(20, "Show Top N Rows", group="Appearance")
+use_ultimate   = input.bool(false, "🔓 Activate Ultimate (30 ETFs)", group="Universe")
+show_sector    = input.bool(true, "Show Sector Name", group="Appearance")
+vol_threshold  = input.float(20.0, "VIX Threshold (Fear)", group="Risk")
+tnx_pct_limit  = input.float(0.5, "TNX Spike Limit % (Yields)", group="Risk", tooltip="Shield activates only if 10Y Yields rise by more than this % today.")
 
 // ==========================================
-// 2. PROFESSIONAL PALETTE (Easy on Eyes)
+// 2. PALETTE
 // ==========================================
-// Muted, high-contrast colors (Material Design style)
-c_text_light   = #E0E0E0             // Soft White
-c_text_dark    = #121212             // Soft Black
-c_header       = #263238             // Blue Grey 900
-c_row_odd      = #37474F             // Blue Grey 800
-c_row_even     = #263238             // Blue Grey 900
-c_bull_rip     = #2E7D32             // Matte Dark Green (Ripping)
-c_bull_turn    = #66BB6A             // Matte Light Green (Early Turn)
-c_bear_top     = #FF7043             // Matte Orange (Topping)
-c_bear_crash   = #EF5350             // Matte Red (Crashing)
-c_act_buy      = #43A047             // Green 600 (Buy Pullback)
-c_act_stink    = #00ACC1             // Cyan 600 (Stink Bid)
-c_act_sell     = #D84315             // Deep Orange 800 (Sell Rip)
-c_act_wait     = #546E7A             // Blue Grey 600 (Wait)
-c_liq_warn     = #3E2723             // Dark Brown/Red (Liquidity Warning)
+c_text_light   = #E0E0E0
+c_text_dark    = #121212
+c_header       = #263238
+c_row_odd      = #37474F
+c_row_even     = #263238
+
+// -- Action Signal Colors --
+c_sig_buy      = #43A047  // Professional Green
+c_sig_trim     = #FF9800  // Orange
+c_sig_sell     = #FF5252  // Red
+c_sig_wait     = #90A4AE  // Grey (Neutral)
+
+// -- Physics Colors --
+c_acc_pos      = #00E676 
+c_acc_neg      = #FF5252
+
+// -- Context/Status Colors --
+c_bull_rip     = #2E7D32  // Dark Green
+c_bull_turn    = #66BB6A  // Light Green
+c_bear_top     = #FF7043  // Orange
+c_bear_crash   = #EF5350  // Red
+c_liq_warn     = #3E2723  // Dark Red
 
 // ==========================================
 // 3. THE UNIVERSE
 // ==========================================
-syms = array.from(
-      "XLK", "XLV", "XLF", "XLE", "XLI", "XLY", "XLP", "XLU", "XLB", "XLC", "XLRE", 
-      "SMH", "IGV", "XBI", "IBB", "KRE", "XOP", "XHB", "ITA", "JETS", "GDX", "URA", "TAN", "IBIT", "TLT",
-      "GRID", "QTUM"
-      )
+core_syms = array.from("SMH", "IGV", "XLK", "XLC", "IBIT", "XLF", "XLE", "XLI", "ITA", "JETS", "GLD", "COPX", "URA", "XLV", "XBI", "TLT", "UUP", "XLU")
+core_secs = array.from("Semis", "Software", "Tech", "Comms", "Bitcoin", "Finance", "Energy", "Industry", "Defense", "Airlines", "Gold", "Copper", "Uranium", "Health", "Biotech", "Bonds", "Dollar", "Utility")
+
+full_syms = array.from("SMH", "IGV", "XLK", "XLC", "CIBR", "QTUM", "BOTZ", "ARKX", "IBIT", "XLE", "URA", "TAN", "GRID", "PAVE", "XLI", "ITA", "JETS", "XLB", "COPX", "REMX", "SLX", "LIT", "GLD", "SLV", "WOOD", "MOO", "XLV", "XBI", "TLT", "UUP")
+full_secs = array.from("Semis", "Software", "Tech", "Comms", "Cyber", "Quantum", "Robots", "Space", "Bitcoin", "Energy", "Nuclear", "Solar", "Grid", "Infra", "Industry", "Defense", "Airlines", "Materials", "Copper", "Rare Earth", "Steel", "Lithium", "Gold", "Silver", "Timber", "Agri", "Health", "Biotech", "Bonds", "Dollar")
+
+syms = use_ultimate ? full_syms : core_syms
+sectors = use_ultimate ? full_secs : core_secs
+row_limit = use_ultimate ? 30 : 18
 
 // ==========================================
-// 4. GLOBAL CONTEXT
+// 4. GLOBAL CONTEXT & HELPER
 // ==========================================
-get_macro(string s, string tf, int len) =>
-    request.security(s, tf, ta.roc(close, len), ignore_invalid_symbol=true)
+calc_vel(p_now, p_old) => 
+    if na(p_now) or na(p_old) or p_old == 0
+        0.0
+    else
+        (p_now - p_old) / p_old * 100
 
-spy_v_macro = get_macro("SPY", tf_macro, vel_len)
-spy_v_tact  = get_macro("SPY", timeframe.period, vel_len)
+calc_physics_dynamic(float c, float c2, float c4, float c12, float c14, float c16, bool high_vol) =>
+    vel_now = calc_vel(c, c12)
+    vel_prev = high_vol ? calc_vel(c4, c16) : calc_vel(c2, c14)
+    acc = vel_now - vel_prev
+    code = (vel_now > 0 and acc > 0) ? 4 : (vel_now <= 0 and acc > 0) ? 3 : (vel_now > 0 and acc < 0) ? 2 : 1
+    [vel_now, acc, code]
 
-get_risk_data(string s1, string s2, string tf) =>
-    float v1 = request.security(s1, tf, close, ignore_invalid_symbol=true)
-    float v2 = request.security(s2, tf, ta.change(close), ignore_invalid_symbol=true)
-    [v1, v2]
+[s_m_c, s_m_c3, s_m_c12, s_m_c15] = request.security("SPY", tf_macro, [close, close[3], close[12], close[15]], ignore_invalid_symbol=true)
+[vix] = request.security("VIX", timeframe.period, [close], ignore_invalid_symbol=true)
+[tnx, tnx_prev] = request.security("TNX", timeframe.period, [close, close[1]], ignore_invalid_symbol=true)
 
-[vix, tnx_chg] = get_risk_data("VIX", "TNX", timeframe.period)
+// --- UPDATED RISK LOGIC ---
+bool is_high_vol = (not na(vix) and vix > 15.0) 
 
-int dyn_a_len = vix < 15 ? 2 : 4 
-bool liquidity_stress = tnx_chg > 0 
+// Calculate TNX % Change manually to filter noise
+float tnx_chg_pct = (tnx - tnx_prev) / tnx_prev * 100
+
+// Shield Triggers ONLY if:
+// 1. VIX > 20
+// 2. OR TNX spikes > 0.5% (ignoring small noise)
+bool liquidity_stress = (not na(vix) and vix > vol_threshold) or (tnx_chg_pct > tnx_pct_limit)
 
 // ==========================================
 // 5. THE ENGINE
 // ==========================================
-f_engine(int v_l, int a_l, float mkt_v) =>
-    float v = ta.roc(close, v_l)
-    float a = ta.mom(v, a_l)
-    float rs = v - mkt_v
-    [v, a, rs]
-
-// Execution
-macro_stats = array.new<int>()
-tact_stats  = array.new<int>()
-macro_vels  = array.new<float>()
-tact_vels   = array.new<float>()
-sym_objs    = array.new<string>()
-
-for i = 0 to array.size(syms) - 1
-    string s = array.get(syms, i)
-    [mV, mA, mRS] = request.security(s, tf_macro, f_engine(vel_len, dyn_a_len, spy_v_macro), ignore_invalid_symbol=true)
-    [tV, tA, tRS] = request.security(s, timeframe.period, f_engine(vel_len, dyn_a_len, spy_v_tact), ignore_invalid_symbol=true)
-    
-    int m_code = (mV > 0 and mA > 0) ? 4 : (mV <= 0 and mA > 0) ? 3 : (mV > 0 and mA < 0) ? 2 : 1
-    int t_code = (tV > 0 and tA > 0) ? 4 : (tV <= 0 and tA > 0) ? 3 : (tV > 0 and tA < 0) ? 2 : 1
-    
-    array.push(macro_stats, m_code)
-    array.push(tact_stats, t_code)
-    array.push(macro_vels, nz(mV))
-    array.push(tact_vels, nz(tV))
-    array.push(sym_objs, s)
-
-// ==========================================
-// 6. SORTING
-// ==========================================
-sort_scores = array.new<float>()
-for i = 0 to array.size(syms) - 1
-    float score = (array.get(macro_stats, i) * 1000) + array.get(macro_vels, i)
-    array.push(sort_scores, score)
-
-ids = array.sort_indices(sort_scores, order.descending)
-
-// ==========================================
-// 7. DASHBOARD & ALERTS
-// ==========================================
-var table dash = table.new(position.middle_right, 6, array.size(syms) + 2, bgcolor=color.new(c_row_even, 100), border_width=1)
-string alert_msg = ""
-
 if barstate.islast
-    // Header Logic
-    color h_bg = liquidity_stress ? color.new(c_liq_warn, 10) : color.new(c_header, 10)
-    string h_liq_txt = liquidity_stress ? " (LIQ TIGHT)" : " (LIQ OK)"
+    macro_stats = array.new<int>()
+    tact_stats  = array.new<int>()
+    macro_vels  = array.new<float>()
+    macro_accs  = array.new<float>() 
+    sym_objs    = array.new<string>()
+    sec_objs    = array.new<string>() 
+
+    for i = 0 to array.size(syms) - 1
+        string s = array.get(syms, i)
+        string sec_name = array.get(sectors, i)
+        
+        [mc, mc2, mc4, mc12, mc14, mc16] = request.security(s, tf_macro, [close, close[2], close[4], close[12], close[14], close[16]], ignore_invalid_symbol=true)
+        [tc, tc2, tc4, tc12, tc14, tc16] = request.security(s, timeframe.period, [close, close[2], close[4], close[12], close[14], close[16]], ignore_invalid_symbol=true)
+        
+        [mV, mA, mCode] = calc_physics_dynamic(mc, mc2, mc4, mc12, mc14, mc16, is_high_vol)
+        [tV, tA, tCode] = calc_physics_dynamic(tc, tc2, tc4, tc12, tc14, tc16, is_high_vol)
+        
+        array.push(macro_stats, mCode)
+        array.push(tact_stats, tCode)
+        array.push(macro_vels, nz(mV))
+        array.push(macro_accs, nz(mA))
+        array.push(sym_objs, s)
+        array.push(sec_objs, sec_name)
+
+    sort_scores = array.new<float>()
+    for i = 0 to array.size(syms) - 1
+        float score = (array.get(macro_stats, i) * 1000) + array.get(macro_vels, i)
+        array.push(sort_scores, score)
+
+    ids = array.sort_indices(sort_scores, order.descending)
+
+    int cols = show_sector ? 7 : 6
+    var table dash = table.new(position.middle_right, cols, row_limit + 2, bgcolor=color.new(c_row_even, 100), border_width=1)
     
-    table.cell(dash, 0, 0, "SYM", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
-    table.cell(dash, 1, 0, "WEEKLY (MACRO)", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
-    table.cell(dash, 2, 0, "DAILY (TACTICAL)", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
-    table.cell(dash, 3, 0, "ACTION SIGNAL" + h_liq_txt, bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
-    table.cell(dash, 4, 0, "VEL (W)", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    color h_bg = liquidity_stress ? color.new(c_liq_warn, 10) : color.new(c_header, 10)
+    // Updated Text Logic for Clarity
+    string reason = (vix > vol_threshold) ? "(HIGH VIX)" : "(YIELDS SPIKING)"
+    string h_liq_txt = liquidity_stress ? " WAIT " + reason : " (OK)"
+    
+    int c = 0
+    table.cell(dash, c, 0, "SYM", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    c += 1
+    if show_sector
+        table.cell(dash, c, 0, "SECTOR", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+        c += 1
+    table.cell(dash, c, 0, "ACTION" + h_liq_txt, bgcolor=h_bg, text_color=c_text_light, text_size=size.small, tooltip="Strategy based on Physics & Risk")
+    c += 1
+    table.cell(dash, c, 0, "VEL (W)", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    c += 1
+    table.cell(dash, c, 0, "ACC (W)", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    c += 1
+    table.cell(dash, c, 0, "WEEKLY", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    c += 1
+    table.cell(dash, c, 0, "DAILY", bgcolor=h_bg, text_color=c_text_light, text_size=size.small)
+    c += 1
 
-    for i = 0 to math.min(show_top_n, array.size(syms)) - 1
+    string alert_msg = "" 
+
+    for i = 0 to row_limit - 1
         int idx = array.get(ids, i)
-        string sym = array.get(sym_objs, idx)
-        int m_c = array.get(macro_stats, idx)
-        int t_c = array.get(tact_stats, idx)
-        float m_v = array.get(macro_vels, idx)
+        if idx < array.size(sym_objs)
+            string sym = array.get(sym_objs, idx)
+            string sec = array.get(sec_objs, idx)
+            int m_c = array.get(macro_stats, idx)
+            int t_c = array.get(tact_stats, idx)
+            float m_v = array.get(macro_vels, idx)
+            float m_a = array.get(macro_accs, idx)
 
-        // Status Text & Muted Colors
-        string m_txt = m_c==4?"RIPPING": m_c==3?"TURN": m_c==2?"TOP": "CRASH"
-        color m_col  = m_c==4?c_bull_rip: m_c==3?c_bull_turn: m_c==2?c_bear_top: c_bear_crash
-        
-        string t_txt = t_c==4?"RIPPING": t_c==3?"TURN": t_c==2?"TOP": "CRASH"
-        color t_col  = t_c==4?c_bull_rip: t_c==3?c_bull_turn: t_c==2?c_bear_top: c_bear_crash
+            string m_txt = m_c==4?"RIPPING": m_c==3?"TURN": m_c==2?"TOP": "CRASH"
+            color m_col  = m_c==4?c_bull_rip: m_c==3?c_bull_turn: m_c==2?c_bear_top: c_bear_crash
+            string t_txt = t_c==4?"RIPPING": t_c==3?"TURN": t_c==2?"TOP": "CRASH"
+            color t_col  = t_c==4?c_bull_rip: t_c==3?c_bull_turn: t_c==2?c_bear_top: c_bear_crash
 
-        // Action Logic
-        string act_txt = "WAIT"
-        color act_col = c_act_wait
-        color txt_c = c_text_light
-        bool notify = false
-        
-        if m_c == 4 and (t_c == 1 or t_c == 2)
-            if liquidity_stress
-                act_txt := "WAIT (LIQ)", act_col := c_bear_top
-            else
-                act_txt := "BUY PULLBACK", act_col := c_act_buy, notify := true
-        
-        else if m_c == 3 and (t_c == 1 or t_c == 2)
-            if liquidity_stress
-                act_txt := "WAIT (LIQ)", act_col := c_bear_top
-            else
-                act_txt := "STINK BID", act_col := c_act_stink, txt_c := c_text_dark, notify := true
-
-        else if (m_c == 2 or m_c == 1) and (t_c == 4 or t_c == 3)
-            act_txt := "SELL RIP", act_col := c_act_sell, notify := true
+            string act_txt = "WAIT"
+            color act_col = c_sig_wait
+            color txt_c = c_text_light
+            bool notify = false
             
-        else if m_c == 4 and t_c == 4
-            act_txt := "HOLD", act_col := c_bull_rip
+            if m_c == 4 
+                if t_c == 4
+                    act_txt := "HOLD / ADD"
+                    act_col := c_sig_buy
+                else if t_c <= 3 
+                    act_txt := "BUY DIP"
+                    act_col := c_sig_buy
+                    notify := true
 
-        if notify and i < 5 
-            alert_msg := alert_msg + sym + ": " + act_txt + " | "
+            else if m_c == 3
+                act_txt := "BUY (TURN)"
+                act_col := c_sig_buy
+                txt_c := c_text_dark
+                notify := true
 
-        color row_bg = i % 2 == 0 ? color.new(c_row_even, 15) : color.new(c_row_odd, 15)
-        
-        if liquidity_stress and act_txt == "WAIT (LIQ)"
-            row_bg := color.new(c_liq_warn, 40)
+            else if (m_c == 2 or m_c == 1) and (t_c == 4 or t_c == 3)
+                act_txt := "SELL RIP"
+                act_col := c_sig_sell
+                notify := true
+            
+            else if m_c == 2
+                act_txt := "TRIM"
+                act_col := c_sig_trim
+                notify := true
 
-        table.cell(dash, 0, i+1, sym, bgcolor=row_bg, text_color=color.yellow, text_size=size.small, text_halign=text.align_left)
-        table.cell(dash, 1, i+1, m_txt, bgcolor=m_col, text_color=c_text_dark, text_size=size.small)
-        table.cell(dash, 2, i+1, t_txt, bgcolor=t_col, text_color=c_text_dark, text_size=size.small)
-        table.cell(dash, 3, i+1, act_txt, bgcolor=act_col, text_color=txt_c, text_size=size.small)
-        table.cell(dash, 4, i+1, str.tostring(m_v, "#.1")+"%", bgcolor=row_bg, text_color=c_text_light, text_size=size.small)
+            else if m_c == 1
+                act_txt := "CASH / SHORT"
+                act_col := c_sig_sell
+                notify := true
+
+            if liquidity_stress
+                if act_txt == "BUY DIP" or act_txt == "BUY (TURN)"
+                    act_txt := "WAIT (RISK)"
+                    act_col := c_sig_wait
+                    txt_c := c_text_light
+                    notify := false 
+
+            if notify and i < 5 
+                alert_msg := alert_msg + sym + ": " + act_txt + " | "
+
+            color row_bg = i % 2 == 0 ? color.new(c_row_even, 15) : color.new(c_row_odd, 15)
+            
+            color a_col = m_a > 0 ? c_acc_pos : c_acc_neg
+            string a_txt = (m_a > 0 ? "+" : "") + str.tostring(m_a, "#.1") + "%"
+
+            int cd = 0
+            table.cell(dash, cd, i+1, sym, bgcolor=row_bg, text_color=color.yellow, text_size=size.small, text_halign=text.align_left)
+            cd += 1
+            if show_sector
+                table.cell(dash, cd, i+1, sec, bgcolor=row_bg, text_color=color.white, text_size=size.small, text_halign=text.align_left)
+                cd += 1
+            table.cell(dash, cd, i+1, act_txt, bgcolor=act_col, text_color=txt_c, text_size=size.small)
+            cd += 1
+            table.cell(dash, cd, i+1, str.tostring(m_v, "#.1")+"%", bgcolor=row_bg, text_color=c_text_light, text_size=size.small)
+            cd += 1
+            table.cell(dash, cd, i+1, a_txt, bgcolor=row_bg, text_color=a_col, text_size=size.small)
+            cd += 1
+            table.cell(dash, cd, i+1, m_txt, bgcolor=m_col, text_color=c_text_dark, text_size=size.small)
+            cd += 1
+            table.cell(dash, cd, i+1, t_txt, bgcolor=t_col, text_color=c_text_dark, text_size=size.small)
+            cd += 1
 
     if str.length(alert_msg) > 0
         alert("Druckenmiller Radar: " + alert_msg, alert.freq_once_per_bar_close)
