@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catalyst Briefing — 1 juin 2026</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#11161f; --panel2:#161c27; --border:#222b3a;
+    --txt:#d7e0ee; --muted:#8a97ab; --green:#1fd17a; --red:#ff5d6c;
+    --amber:#ffb340; --blue:#4ea8ff; --purple:#b78bff; --accent:#1fd17a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--txt);
+    font-family:"SF Mono",ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,monospace;
+    font-size:14px; line-height:1.6; padding:0 0 60px;
+  }
+  .wrap{max-width:1100px; margin:0 auto; padding:0 18px}
+  header{
+    border-bottom:1px solid var(--border); padding:26px 0 18px; margin-bottom:8px;
+    position:sticky; top:0; background:linear-gradient(180deg,var(--bg) 80%,transparent); z-index:5;
+  }
+  h1{font-size:21px; margin:0; letter-spacing:.5px}
+  h1 .tag{color:var(--accent)}
+  .sub{color:var(--muted); font-size:12.5px; margin-top:6px}
+  .ticker{
+    display:flex; flex-wrap:wrap; gap:14px; margin-top:14px; font-size:13px;
+    background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 14px;
+  }
+  .ti{display:flex; gap:7px; align-items:baseline}
+  .ti b{color:var(--txt)} .ti .px{color:var(--muted)}
+  .up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--amber)}
+  section{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:18px 20px; margin:16px 0;
+  }
+  h2{
+    font-size:15px; margin:0 0 12px; letter-spacing:.4px; display:flex; align-items:center; gap:10px;
+  }
+  h2 .n{
+    background:var(--panel2); border:1px solid var(--border); color:var(--accent);
+    width:26px; height:26px; border-radius:6px; display:inline-flex; align-items:center;
+    justify-content:center; font-size:12px; flex:none;
+  }
+  h3{font-size:13px; color:var(--blue); margin:16px 0 6px; text-transform:uppercase; letter-spacing:.6px}
+  ul{margin:6px 0 6px; padding-left:20px} li{margin:4px 0}
+  p{margin:6px 0}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block; padding:1px 8px; border-radius:20px; font-size:11px; font-weight:600; vertical-align:middle}
+  .pill.hi{background:rgba(255,93,108,.14); color:var(--red); border:1px solid rgba(255,93,108,.3)}
+  .pill.mid{background:rgba(255,179,64,.14); color:var(--amber); border:1px solid rgba(255,179,64,.3)}
+  .pill.lo{background:rgba(31,209,122,.13); color:var(--green); border:1px solid rgba(31,209,122,.3)}
+  table{width:100%; border-collapse:collapse; margin:8px 0; font-size:12.5px}
+  th,td{text-align:left; padding:7px 9px; border-bottom:1px solid var(--border)}
+  th{color:var(--muted); font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:.5px}
+  td.r,th.r{text-align:right}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:12px 14px}
+  .card h4{margin:0 0 6px; font-size:12.5px; color:var(--purple); letter-spacing:.4px}
+  .kv{display:flex; justify-content:space-between; gap:10px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.05)}
+  .kv:last-child{border:none}
+  .lvl{color:var(--muted)}
+  .risk{border-left:3px solid var(--red); padding-left:12px; margin:8px 0}
+  .watch{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{background:var(--panel2); border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:12px}
+  .chip b{color:var(--accent)}
+  footer{color:var(--muted); font-size:11px; text-align:center; margin-top:24px; line-height:1.8}
+  a{color:var(--blue); text-decoration:none} a:hover{text-decoration:underline}
+  .flash{background:rgba(78,168,255,.08); border:1px solid rgba(78,168,255,.25); border-radius:8px; padding:10px 14px; margin:10px 0; font-size:12.5px}
+  .sep{height:1px; background:var(--border); margin:14px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1><span class="tag">⌁ CATALYST</span> — Macro &amp; Market Briefing</h1>
+    <div class="sub">Lundi 1 juin 2026 · Pré-ouverture US · Toutes heures en ET · Régime : <b style="color:var(--amber)">Risk-on fragile / inflation de guerre</b></div>
+    <div class="ticker">
+      <div class="ti"><b>S&amp;P 500</b><span class="up">7 599,96 ▲ +0,26%</span><span class="px">ATH</span></div>
+      <div class="ti"><b>Nasdaq</b><span class="up">27 086,81 ▲ +0,42%</span><span class="px">ATH</span></div>
+      <div class="ti"><b>SPY</b><span class="up">▲ +0,23%</span></div>
+      <div class="ti"><b>QQQ</b><span class="up">711,23</span></div>
+      <div class="ti"><b>Brent</b><span class="down">~96 $ ▲</span></div>
+      <div class="ti"><b>WTI</b><span class="down">&gt;90 $</span></div>
+      <div class="ti"><b>US 10Y</b><span class="flat">~4,1%</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="flash">
+    <b>⚡ Thèse du jour :</b> Indices au plus haut historique portés par un choc thématique IA (puce PC Nvidia) + énergie,
+    mais sous une chape macro hostile : <b>guerre d'Iran</b> qui maintient le pétrole à 90-100 $, inflation qui repart, et un
+    <b>nouveau Fed (Warsh)</b> qui penche faucon. Le marché monte sur un narratif sectoriel pendant que la courbe des taux dérive.
+    Asymétrie : upside thématique vs downside macro/géopolitique. <b>On trade le momentum, on respecte les stops.</b>
+  </div>
+
+  <!-- 1 -->
+  <section>
+    <h2><span class="n">1</span> Macro events &amp; heures de publication <span class="pill hi">SEMAINE LOURDE</span></h2>
+    <table>
+      <tr><th>Heure (ET)</th><th>Jour</th><th>Événement</th><th>Attendu / Précédent</th><th class="r">Impact</th></tr>
+      <tr><td>10:00</td><td><b>Lun 1</b></td><td>ISM Manufacturing PMI (mai)</td><td><b class="up">54,0</b> publié · prév. ~52 · préc. 52,7</td><td class="r"><span class="pill mid">PUBLIÉ ▲</span></td></tr>
+      <tr><td>—</td><td>Lun 1</td><td>S&amp;P Global Mfg PMI final</td><td>confirmation expansion</td><td class="r"><span class="pill lo">faible</span></td></tr>
+      <tr><td>10:00</td><td>Mar 2</td><td>JOLTS — ouvertures de postes (avr)</td><td>jauge tension emploi</td><td class="r"><span class="pill mid">moyen</span></td></tr>
+      <tr><td>08:15</td><td>Mer 3</td><td>ADP Employment (mai)</td><td>amuse-bouche NFP</td><td class="r"><span class="pill mid">moyen</span></td></tr>
+      <tr><td>10:00</td><td>Mer 3</td><td>ISM Services PMI (mai)</td><td>poids lourd croissance</td><td class="r"><span class="pill hi">élevé</span></td></tr>
+      <tr><td>08:30</td><td><b>Ven 5</b></td><td><b>Nonfarm Payrolls + chômage (mai)</b></td><td>préc. <b>+115k</b> · U-rate <b>4,3%</b></td><td class="r"><span class="pill hi">MAJEUR</span></td></tr>
+    </table>
+    <p class="muted">Le <b>NFP de vendredi</b> est le pivot de la semaine : avec un Fed désormais piloté par Warsh et des marchés qui pricent
+    un risque de <i>hausse</i> de taux, un rapport trop chaud (inflation salariale) rallume le scénario hawkish.</p>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <h2><span class="n">2</span> Fed · Taux · Bond yields · Dollar</h2>
+    <div class="grid">
+      <div class="card">
+        <h4>Le pivot institutionnel</h4>
+        <div class="kv"><span class="lvl">Nouveau Chair</span><b>Kevin Warsh</b></div>
+        <div class="kv"><span class="lvl">Investiture</span><span>22 mai 2026</span></div>
+        <div class="kv"><span class="lvl">Vote Sénat</span><span class="down">54–45 (le + divisé de l'histoire)</span></div>
+        <div class="kv"><span class="lvl">Powell</span><span>reste au Board (inhabituel)</span></div>
+      </div>
+      <div class="card">
+        <h4>Pricing taux (marché)</h4>
+        <div class="kv"><span class="lvl">Proba hausse fin 2026</span><b class="down">~42%</b></div>
+        <div class="kv"><span class="lvl">Baisses repoussées à</span><span>T3/T4 2026 → T1 2027</span></div>
+        <div class="kv"><span class="lvl">Cible 10Y 2026</span><span>3,75% – 4,25%</span></div>
+        <div class="kv"><span class="lvl">Vue Yardeni</span><span class="down">hausse possible en juillet</span></div>
+      </div>
+    </div>
+    <ul>
+      <li><b>Le régime a basculé.</b> On n'est plus dans « quand la 1ère baisse » mais dans « le Fed devra-t-il <i>remonter</i> ».
+        Le choc inflation lié à la guerre d'Iran a repricé toute la courbe.</li>
+      <li><b>Warsh = biais faucon</b> et inconnue de crédibilité. La nomination clivante (54-45) et le maintien de Powell au Board
+        créent un risque de bruit de communication / cacophonie FOMC.</li>
+      <li><b>Bond vigilantes</b> de retour dans le récit : la pression sur le long de la courbe est un risque structurel pour les multiples actions.</li>
+    </ul>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <h2><span class="n">3</span> Géopolitique &amp; Commodities <span class="pill hi">DRIVER #1</span></h2>
+    <h3>Guerre d'Iran — choc d'Hormuz</h3>
+    <ul>
+      <li><b>Détroit d'Ormuz fermé</b> → régime « no war / no oil / no straits ». Trafic pétrolier quasi à l'arrêt.</li>
+      <li><b>Brent</b> : pic ~<b>120 $</b> (+55% depuis le début du conflit), retombé vers <b>~96 $</b>. <b>WTI</b> de nouveau &gt; 90 $.</li>
+      <li>Consensus opérateurs : pétrole <b>ancré 90–100 $</b> jusqu'en 2027, même si Ormuz rouvre début juin.</li>
+      <li><b>Effets de second tour</b> : Golfe = ~45% de l'offre mondiale de <b>soufre</b> → flambée acide sulfurique ;
+        la Chine impose des restrictions d'export sur commodities industrielles. Inflation des intrants.</li>
+    </ul>
+    <p class="muted">⚠️ « Combien de temps peut-on <i>regarder à travers</i> le choc ? » (Fed de Minneapolis) — le marché pétrolier parie
+    sur une fin rapide du conflit ; le risque, c'est qu'il se trompe. Toute escalade = gap haussier brutal sur l'énergie + risk-off actions.</p>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <h2><span class="n">4</span> Earnings &amp; News importantes</h2>
+    <h3>Le catalyseur du jour : Nvidia / Jensen Huang</h3>
+    <p>Huang dévoile une <b>nouvelle puce conçue pour piloter les PC</b> → onde de choc sur tout le complexe semis/IA.</p>
+    <div class="grid">
+      <div class="card">
+        <h4 style="color:var(--green)">▲ Gagnants (premarket)</h4>
+        <div class="kv"><span>ARM Holdings</span><span class="up">surge</span></div>
+        <div class="kv"><span>Hewlett Packard Ent. (HPE)</span><span class="up">surge</span></div>
+        <div class="kv"><span>ServiceNow (NOW)</span><span class="up">surge</span></div>
+        <div class="kv"><span>IBM</span><span class="up">surge</span></div>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--red)">▼ Perdants</h4>
+        <div class="kv"><span>Qualcomm (QCOM)</span><span class="down">-9,6%</span></div>
+        <div class="kv"><span>Wolfspeed (WOLF)</span><span class="down">-8%</span></div>
+        <div class="kv"><span>Intel (INTC)</span><span class="down">-5,8%</span></div>
+      </div>
+    </div>
+    <p class="muted">Lecture : Nvidia étend son emprise vers le PC → re-rating des partenaires d'écosystème (ARM, NOW, IBM, HPE)
+    et dé-rating des fournisseurs concurrencés (QCOM, INTC). C'est une <b>rotation intra-semis</b>, pas un risk-off.</p>
+  </section>
+
+  <!-- 5 -->
+  <section>
+    <h2><span class="n">5</span> Flux sectoriels &amp; Rotations</h2>
+    <table>
+      <tr><th>Secteur</th><th>Flux du jour</th><th>Driver</th></tr>
+      <tr><td><b class="up">Énergie</b></td><td class="up">+2,5%</td><td>Hausse prix gaz + ancrage pétrole guerre Iran</td></tr>
+      <tr><td><b class="up">Technologie</b></td><td class="up">+1,67%</td><td>Catalyseur puce PC Nvidia, momentum IA</td></tr>
+      <tr><td><b>Semis</b></td><td class="flat">dispersé</td><td>Rotation interne ARM/NOW vs QCOM/INTC</td></tr>
+      <tr><td><b>Paiements</b></td><td class="down">sous pression</td><td>Sortie de Buffett (V, MA) — signal de flux</td></tr>
+    </table>
+    <ul>
+      <li><b>Leadership barbell</b> : Énergie (value/inflation) + Tech-IA (growth) tirent ensemble — combinaison classique de fin de cycle inflationniste.</li>
+      <li>ISM Mfg <b>54,0</b> (plus haut depuis mai 2022), <b>New Orders 56,8</b> : les <b>industrielles cycliques</b> (machines, transport, chimie, électronique) ont le vent dans le dos.</li>
+    </ul>
+  </section>
+
+  <!-- 6 -->
+  <section>
+    <h2><span class="n">6</span> Sentiment marché &amp; Positioning</h2>
+    <div class="grid">
+      <div class="card">
+        <h4>La divergence clé</h4>
+        <div class="kv"><span class="lvl">Gérants pro — cash</span><b class="down">3,3% (historiquement bas)</b></div>
+        <div class="kv"><span class="lvl">Gérants pro — biais</span><span class="up">greed / surinvestis</span></div>
+        <div class="kv"><span class="lvl">Retail (AAII / Fear&amp;Greed)</span><span class="down">extreme fear</span></div>
+      </div>
+      <div class="card">
+        <h4>Lecture de risque</h4>
+        <p style="margin:0">Pros « all-in » (peu de poudre sèche) + indices à l'ATH = <b>marché vulnérable aux mauvaises surprises</b>.
+        Peu de coussin de cash pour acheter les creux. Le retail craintif limite l'euphorie mais n'amortit pas un dégagement institutionnel.</p>
+      </div>
+    </div>
+    <p class="muted">Setup typique de sommet fragile : pas de panique acheteuse, mais un positionnement long crowdé qui se dénoue vite si le NFP ou Ormuz dérape.</p>
+  </section>
+
+  <!-- 7 -->
+  <section>
+    <h2><span class="n">7</span> Catalyseurs majeurs SPY / QQQ / IWM</h2>
+    <table>
+      <tr><th>Actif</th><th>Catalyseur haussier</th><th>Catalyseur baissier</th></tr>
+      <tr><td><b>SPY</b></td><td>Énergie + tech tirent ; ISM solide</td><td>NFP chaud → reprise hawkish, dérive 10Y</td></tr>
+      <tr><td><b>QQQ</b></td><td>Thème puce PC Nvidia, leadership IA intact</td><td>Rotation semis, sensibilité aux taux longs</td></tr>
+      <tr><td><b>IWM</b></td><td>ISM Mfg 54 + New Orders 56,8 = pro-cyclique</td><td>Small caps = otages des taux ; risque hausse Fed</td></tr>
+    </table>
+    <p class="muted"><b>IWM est le tell</b> : si le marché croyait vraiment à des baisses, les small caps surperformeraient. Surveille leur
+    comportement post-NFP comme jauge du vrai régime de taux.</p>
+  </section>
+
+  <!-- 8 -->
+  <section>
+    <h2><span class="n">8</span> Watchlist — thèmes chauds du jour</h2>
+    <div class="watch">
+      <span class="chip"><b>IA-PC :</b> ARM · NOW · IBM · HPE</span>
+      <span class="chip"><b>Short semis :</b> QCOM · INTC · WOLF</span>
+      <span class="chip"><b>Énergie :</b> XLE · XOM · CVX · OXH</span>
+      <span class="chip"><b>Pétrole/Hormuz :</b> USO · BNO · OIH</span>
+      <span class="chip"><b>Inflation/Or :</b> GLD · commodities</span>
+      <span class="chip"><b>Cycliques ISM :</b> machines · transport · chimie</span>
+      <span class="chip"><b>Buffett longs :</b> GOOGL · DAL · LEN · NYT</span>
+      <span class="chip"><b>Taux :</b> TLT · 10Y · DXY</span>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section>
+    <h2><span class="n">9</span> Risques principaux du marché</h2>
+    <div class="risk"><b>Géopolitique / Ormuz</b> — réouverture qui cale ou escalade Iran → pétrole gappe, choc d'offre, risk-off.</div>
+    <div class="risk"><b>Inflation &amp; Fed Warsh</b> — un Fed faucon qui parle de <i>hausse</i> ; NFP/ISM Services chauds = repricing brutal des taux.</div>
+    <div class="risk"><b>Positionnement</b> — gérants à 3,3% de cash, indices à l'ATH : peu de filet en cas de mauvaise nouvelle.</div>
+    <div class="risk"><b>Concentration / rotation semis</b> — leadership porté par poignée de noms IA ; cassure de QCOM/INTC contagieuse.</div>
+    <div class="risk"><b>Courbe des taux</b> — « bond vigilantes » sur le 10Y : pression sur les multiples si le long monte.</div>
+  </section>
+
+  <!-- 10 -->
+  <section>
+    <h2><span class="n">10</span> Ce qui peut créer de la volatilité aujourd'hui</h2>
+    <ul>
+      <li><b>Digestion de l'ISM 54,0</b> (plus haut depuis mai 2022) : marché tiraillé — bonne croissance, mais 42% des panélistes citent la guerre d'Iran, 57% la volatilité des prix → narratif inflationniste qui pèse sur les taux.</li>
+      <li><b>Suite de l'onde Nvidia</b> : poursuite/retournement du move QCOM/INTC/ARM en séance régulière (premarket ≠ close).</li>
+      <li><b>Headlines Ormuz / Iran</b> : n'importe quelle dépêche peut faire bouger le brut de plusieurs % → courroie directe vers actions.</li>
+      <li><b>Pré-positionnement NFP</b> : dé-risking/hedging avant vendredi, surtout sur taux et small caps.</li>
+      <li><b>Communication FOMC ère-Warsh</b> : toute intervention de membres du Fed scrutée pour le ton (faucon vs colombe).</li>
+    </ul>
+  </section>
+
+  <!-- 11 -->
+  <section>
+    <h2><span class="n">11</span> Smart Money — investisseurs respectés (13F T1 2026)</h2>
+    <div class="grid">
+      <div class="card">
+        <h4>Berkshire / Buffett <span class="muted" style="font-weight:400">(« Buffett-free debut »)</span></h4>
+        <div class="kv"><span class="up">ACHATS</span><span><b>Alphabet</b> nouvelle position ~11 Md$</span></div>
+        <div class="kv"><span class="up">+</span><span>Delta (DAL) new · NYT +199% · Lennar +43%</span></div>
+        <div class="kv"><span class="down">VENTES</span><span>Visa &amp; Mastercard <b>soldées</b></span></div>
+        <div class="kv"><span class="down">−</span><span>Chevron −7 Md$ · UnitedHealth sortie totale</span></div>
+        <div class="kv"><span class="lvl">Top 5</span><span>AAPL 22% · AXP 17% · KO 12% · BAC 10% · CVX 7%</span></div>
+      </div>
+      <div class="card">
+        <h4>Autres gérants suivis</h4>
+        <div class="kv"><span><b>Ackman</b> (Pershing Sq.)</span><span class="up">construit Microsoft</span></div>
+        <div class="kv"><span><b>Dalio</b> (Bridgewater)</span><span>défait le core passif ; +Amazon, +Micron, +Broadcom</span></div>
+        <div class="kv"><span><b>Tiger Global</b></span><span class="down">allège Microsoft</span></div>
+        <div class="kv"><span><b>Third Point</b> (Loeb)</span><span class="down">sort de Microsoft</span></div>
+        <div class="kv"><span><b>M. Burry</b></span><span class="muted">aucun 13F déposé à date</span></div>
+      </div>
+    </div>
+    <p class="muted"><b>Signaux de flux :</b> le grand pari Buffett sur <b>Alphabet</b> légitime la value-tech IA ;
+    sa sortie des <b>paiements</b> (V, MA) explique en partie la faiblesse du secteur ; vue <b>divisée sur Microsoft</b> (Ackman achète, Tiger/Third Point vendent)
+    = pas de consensus mega-cap. Dalio rote du passif vers le stock-picking cyclique/IA (Micron, Broadcom).</p>
+    <p class="muted" style="font-size:11px">⚠️ Rappel : les 13F reflètent les positions au <b>31 mars 2026</b> (publiées mi-mai), avec retard — à utiliser comme biais de fond, pas comme signal de timing.</p>
+  </section>
+
+  <div class="sep"></div>
+  <section style="background:var(--panel2)">
+    <h2><span class="n">★</span> Plan de trade — synthèse opérationnelle</h2>
+    <ul>
+      <li><b>Biais :</b> long le momentum IA + énergie tant que l'ATH tient, mais <b>taille réduite</b> avant le NFP.</li>
+      <li><b>Niveau de veille :</b> comportement de l'<b>IWM</b> et du <b>10Y</b> = juge de paix du régime de taux.</li>
+      <li><b>Hedge :</b> exposition pétrole/énergie comme couverture du risque Ormuz ; surveiller VIX pour le coût de l'assurance.</li>
+      <li><b>Pièges :</b> chasser le premarket QCOM/ARM (mean-reversion fréquente) ; sur-long avant un NFP chaud.</li>
+      <li><b>Catalyseur binaire de la semaine :</b> NFP vendredi 08:30 ET + tout titre Ormuz.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>⌁ <b>CATALYST</b> · Briefing généré le 1 juin 2026 · Sources publiques (TheStreet, CNBC, NPR, ISM, BLS, Wikipedia, AInvest, 24/7 Wall St., Fed de Minneapolis)</div>
+    <div>Document d'information à but éducatif — <b>ne constitue pas un conseil en investissement</b>. Données sujettes à révision. DYOR.</div>
+  </footer>
+</div>
+</body>
+</html>
